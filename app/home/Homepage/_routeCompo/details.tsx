@@ -1,17 +1,21 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, FlatList, Dimensions } from 'react-native'
-import React, { useState } from 'react'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Animated } from 'react-native'
+import React, { useState, useRef } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import JustForYou from '../JustForYou'
 
-const { width: screenWidth } = Dimensions.get('window')
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
 const Details = () => {
   const [selectedImage, setSelectedImage] = useState(0)
   const [selectedSize, setSelectedSize] = useState('M')
   const [selectedColor, setSelectedColor] = useState(0)
   const [showAllReviews, setShowAllReviews] = useState(false)
+  const [showOptionsDrawer, setShowOptionsDrawer] = useState(false)
+  const [quantity, setQuantity] = useState(1)
+  
+  const slideAnim = useRef(new Animated.Value(screenHeight)).current
 
   // Product data
   const product = {
@@ -86,6 +90,67 @@ const Details = () => {
     ]
   }
 
+  const openOptionsDrawer = () => {
+    setShowOptionsDrawer(true)
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  const closeOptionsDrawer = () => {
+    Animated.timing(slideAnim, {
+      toValue: screenHeight,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowOptionsDrawer(false)
+    })
+  }
+
+  const increaseQuantity = () => {
+    setQuantity(prev => prev + 1)
+  }
+
+  const decreaseQuantity = () => {
+    setQuantity(prev => prev > 1 ? prev - 1 : 1)
+  }
+
+  const handleAddToCart = () => {
+    // Add to cart logic here
+    console.log('Added to cart:', {
+      product: product.name,
+      color: product.colors[selectedColor].name,
+      size: selectedSize,
+      quantity: quantity,
+      price: product.discountPrice
+    })
+    closeOptionsDrawer()
+  }
+
+  const handleBuyNow = () => {
+    // Buy now logic here
+    console.log('Buy now:', {
+      product: product.name,
+      color: product.colors[selectedColor].name,
+      size: selectedSize,
+      quantity: quantity,
+      price: product.discountPrice
+    })
+    closeOptionsDrawer()
+  }
+
+  const handleAddToWishlist = () => {
+    // Add to wishlist logic here
+    console.log('Added to wishlist:', {
+      product: product.name,
+      color: product.colors[selectedColor].name,
+      size: selectedSize
+    })
+    closeOptionsDrawer()
+  }
+
   const displayedReviews = showAllReviews ? product.reviews : product.reviews.slice(0, 2)
 
   const renderReviewItem = ({ item }) => (
@@ -158,7 +223,12 @@ const Details = () => {
         <View style={styles.infoSection}>
           <View style={styles.header}>
             <Text style={styles.brand}>{product.brand}</Text>
-            <Text style={styles.productName}>{product.name}</Text>
+            <View style={styles.productNameRow}>
+              <Text style={styles.productName}>{product.name}</Text>
+              <TouchableOpacity onPress={openOptionsDrawer}>
+                <Ionicons name="arrow-forward" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
             <View style={styles.ratingContainer}>
               <View style={styles.stars}>
                 {[...Array(5)].map((_, index) => (
@@ -306,13 +376,145 @@ const Details = () => {
           )}
         </View>
 
-      <View style={{marginTop:40}}>
+        <View style={{marginTop:40}}>
           <JustForYou />
-      </View>
+        </View>
       </ScrollView>
 
-      {/* Add to Cart Button */}
+      {/* Options Drawer Modal */}
+      <Modal
+        visible={showOptionsDrawer}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={closeOptionsDrawer}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.overlayTouchable}
+            onPress={closeOptionsDrawer}
+          />
+          <Animated.View 
+            style={[
+              styles.drawerContainer,
+              {
+                transform: [{ translateY: slideAnim }]
+              }
+            ]}
+          >
+            <View style={styles.drawerHeader}>
+              <Text style={styles.drawerTitle}>Select Options</Text>
+              <TouchableOpacity onPress={closeOptionsDrawer}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
 
+            <ScrollView style={styles.drawerContent}>
+              {/* Product Preview */}
+              <View style={styles.productPreview}>
+                <Image 
+                  source={product.images[selectedImage]} 
+                  style={styles.previewImage}
+                  contentFit="cover"
+                />
+                <View style={styles.previewInfo}>
+                  <Text style={styles.previewName}>{product.name}</Text>
+                  <Text style={styles.previewPrice}>${product.discountPrice}</Text>
+                </View>
+              </View>
+
+              {/* Color Selection */}
+              <View style={styles.drawerSection}>
+                <Text style={styles.drawerSectionTitle}>Color</Text>
+                <View style={styles.colorsContainer}>
+                  {product.colors.map((color, index) => (
+                    <TouchableOpacity
+                      key={color.id}
+                      style={[
+                        styles.colorOption,
+                        selectedColor === index && styles.colorOptionSelected,
+                        { backgroundColor: color.value }
+                      ]}
+                      onPress={() => setSelectedColor(index)}
+                    >
+                      {selectedColor === index && (
+                        <Ionicons name="checkmark" size={16} color="white" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Size Selection */}
+              <View style={styles.drawerSection}>
+                <Text style={styles.drawerSectionTitle}>Size</Text>
+                <View style={styles.sizesContainer}>
+                  {product.sizes.map((size) => (
+                    <TouchableOpacity
+                      key={size}
+                      style={[
+                        styles.sizeOption,
+                        selectedSize === size && styles.sizeOptionSelected
+                      ]}
+                      onPress={() => setSelectedSize(size)}
+                    >
+                      <Text style={[
+                        styles.sizeText,
+                        selectedSize === size && styles.sizeTextSelected
+                      ]}>
+                        {size}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Quantity Selection */}
+              <View style={styles.drawerSection}>
+                <Text style={styles.drawerSectionTitle}>Quantity</Text>
+                <View style={styles.quantityContainer}>
+                  <TouchableOpacity 
+                    style={styles.quantityButton}
+                    onPress={decreaseQuantity}
+                  >
+                    <Ionicons name="remove" size={20} color="#333" />
+                  </TouchableOpacity>
+                  <Text style={styles.quantityText}>{quantity}</Text>
+                  <TouchableOpacity 
+                    style={styles.quantityButton}
+                    onPress={increaseQuantity}
+                  >
+                    <Ionicons name="add" size={20} color="#333" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity 
+                style={styles.wishlistButtonDrawer}
+                onPress={handleAddToWishlist}
+              >
+                <Ionicons name="heart-outline" size={24} color="#333" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.addToCartButtonDrawer}
+                onPress={handleAddToCart}
+              >
+                <Text style={styles.addToCartText}>Add to Cart</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.buyNowButton}
+                onPress={handleBuyNow}
+              >
+                <Text style={styles.buyNowText}>Buy Now</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -368,11 +570,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontWeight: '500',
   },
+  productNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   productName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000',
-    marginBottom: 8,
+    flex: 1,
+    marginRight: 12,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -616,16 +825,101 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#004CFF',
   },
-  footer: {
+  // Drawer Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  overlayTouchable: {
+    flex: 1,
+  },
+  drawerContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: screenHeight * 0.8,
+  },
+  drawerHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  drawerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  drawerContent: {
+    padding: 20,
+  },
+  productPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
     gap: 12,
   },
-  wishlistButton: {
+  previewImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  previewInfo: {
+    flex: 1,
+  },
+  previewName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  previewPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004CFF',
+  },
+  drawerSection: {
+    marginBottom: 24,
+  },
+  drawerSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 12,
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+  },
+  quantityButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  quantityText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  wishlistButtonDrawer: {
     width: 50,
     height: 50,
     borderRadius: 25,
@@ -635,22 +929,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  addToCartButton: {
+  addToCartButtonDrawer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#004CFF',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 15,
     borderRadius: 12,
+    alignItems: 'center',
   },
   addToCartText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: 'white',
   },
-  addToCartPrice: {
+  buyNowButton: {
+    flex: 1,
+    backgroundColor: '#000',
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  buyNowText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: 'white',

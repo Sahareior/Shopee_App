@@ -1,20 +1,67 @@
 import { Stack } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { StatusBar } from "expo-status-bar";
+import { Platform } from "react-native";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function RootLayout() {
-  // Later you’ll replace this with your AuthContext or async storage
   const [user, setUser] = useState(true);
-  
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      require('react-native-gesture-handler');
+    }
+  }, []);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {!user ? (
-        // Not logged in → Welcome + Auth screens
-        <Stack.Screen name="index" />
-      ) : (
-        // Logged in → home
-        <Stack.Screen name="(tabs)" />
-      )}
-    </Stack>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <StatusBar 
+        style="dark" 
+        backgroundColor="#ffffff"
+        translucent={false}
+      />
+      <Stack 
+        screenOptions={{ 
+          headerShown: false,
+          // Change to 'slide_from_bottom' for better visual continuity
+          animation: 'slide_from_bottom',
+          animationDuration: 350,
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          // CRITICAL: This keeps the previous screen visible during transition
+          presentation: 'card',
+          contentStyle: { backgroundColor: '#ffffff' },
+        }}
+      >
+        {!user ? (
+          <Stack.Screen 
+            name="index" 
+            options={{
+              animation: 'fade',
+              animationDuration: 300,
+            }}
+          />
+        ) : (
+          <Stack.Screen 
+            name="(tabs)" 
+            options={{
+              animation: 'fade',
+            }}
+          />
+        )}
+        
+        {/* Add individual screen configurations for better control */}
+        <Stack.Screen 
+          name="details" 
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            gestureDirection: 'horizontal',
+            animationDuration: 400, // Slightly longer for smoother effect
+          }} 
+        />
+      </Stack>
+    </GestureHandlerRootView>
   );
 }

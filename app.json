@@ -1,5 +1,14 @@
 {
   "expo": {
+        "androidStatusBar": {
+      "backgroundColor": "#ffffff",
+      "barStyle": "dark-content",
+      "translucent": false
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#ffffff",
+      "barStyle": "dark-content"
+    },
     "name": "app",
     "slug": "app",
     "version": "1.0.0",
