@@ -8,17 +8,18 @@ import CommonScroller from '../home/Homepage/CommonScroller'
 import Categories from '../home/Homepage/Categories'
 import FlashSale from '../home/Homepage/Flashsell'
 import JustForYou from '../home/Homepage/JustForYou'
+import ProfileHeader from '../home/ProfilePage/ProfileHeader'
 
 
 const Home = () => {
   return (
     <SafeAreaView style={{ backgroundColor: '#FFF'}}>
       <ScrollView>
-        <Header />
-        <RecentlyViewed />
-        <Stories />
-        <CommonScroller title={'New Items'} />
+        <ProfileHeader />
         <Categories />
+        <RecentlyViewed from='home' />
+        {/* <Stories /> */}
+        <CommonScroller title={'New Items'} />
         <FlashSale />
         <JustForYou />
       </ScrollView>

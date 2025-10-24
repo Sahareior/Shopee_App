@@ -1,6 +1,7 @@
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Image } from 'expo-image'
+import { useRouter } from 'expo-router'
 
 const FlashSale = () => {
   const [timeLeft, setTimeLeft] = useState({
@@ -10,6 +11,8 @@ const FlashSale = () => {
   })
 
   const [selectedProducts, setSelectedProducts] = useState([])
+
+  const router = useRouter()
 
   // Countdown timer
   useEffect(() => {
@@ -185,7 +188,9 @@ const FlashSale = () => {
       {/* Header with Timer */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Flash Sale</Text>
+          <TouchableOpacity onPress={()=> router.push('/home/Homepage/_routeCompo/flashSellsDetails')}>
+            <Text  style={styles.title}>Flash Sale</Text>
+          </TouchableOpacity>
           <Text style={styles.subtitle}>Limited time offers</Text>
  
         </View>
@@ -294,8 +299,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   flatListContent: {
-    paddingRight: 16,
-    gap: 12,
+    paddingRight: 1,
+    gap: -1,
+    // paddingLeft:20
   },
   productCard: {
     width: 180,
@@ -326,7 +332,7 @@ const styles = StyleSheet.create({
   },
   productImage: {
     width: '100%',
-    height: 70,
+    height: 90,
     borderRadius: 6,
   },
   productName: {

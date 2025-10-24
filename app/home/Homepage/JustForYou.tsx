@@ -1,9 +1,11 @@
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import { Image } from 'expo-image'
+import { useRouter } from 'expo-router'
 
 const JustForYou = () => {
   const [currentPage, setCurrentPage] = useState(1)
+  const router = useRouter()
 
   // Sample products data
   const allProducts = [
@@ -187,7 +189,7 @@ const JustForYou = () => {
   const renderProductRow = (pair, index) => (
     <View key={`row-${index}`} style={styles.productRow}>
       {pair.map((product) => (
-        <TouchableOpacity key={product.id} style={styles.productCard}>
+        <TouchableOpacity onPress={()=> router.push('/home/Homepage/_routeCompo/details')} key={product.id} style={styles.productCard}>
           <View style={styles.imageContainer}>
             <Image 
               source={product.image} 
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingHorizontal: 16,
+    paddingHorizontal: 11,
   },
   header: {
     marginBottom: 20,
