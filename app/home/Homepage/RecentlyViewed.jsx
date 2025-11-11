@@ -2,12 +2,15 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Dimensions
 import React, { useState } from 'react'
 import { Image } from 'expo-image'
 import { StatusBar } from 'expo-status-bar'
+import { useRouter } from 'expo-router'
 
 const RecentlyViewed = ({from}) => {
   const [activeStatus, setActiveStatus] = useState('To Pay')
   const [storyModalVisible, setStoryModalVisible] = useState(false)
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [currentUserIndex, setCurrentUserIndex] = useState(0)
+
+  const router = useRouter()
 console.log(from)
   // Sample data for recently viewed profiles with stories
   const recentlyViewed = [
@@ -124,21 +127,30 @@ console.log(from)
   from !=='home' && (
           <View style={styles.navigationTabs}>
         {statusItems.map((item) => (
-          <TouchableOpacity 
-            key={item}
-            style={[
-              styles.tab,
-              activeStatus === item && styles.tabActive
-            ]}
-            onPress={() => setActiveStatus(item)}
-          >
-            <Text style={[
-              styles.tabText,
-              activeStatus === item && styles.tabTextActive
-            ]}>
-              {item}
-            </Text>
-          </TouchableOpacity>
+<TouchableOpacity
+  key={item}
+  style={[
+    styles.tab,
+    activeStatus === item && styles.tabActive
+  ]}
+  onPress={() => {
+    if (item === 'To Receive') {
+      router.push('/home/Homepage/_routeCompo/Toreceive');
+    } else {
+      setActiveStatus(item);
+    }
+  }}
+>
+  <Text
+    style={[
+      styles.tabText,
+      activeStatus === item && styles.tabTextActive
+    ]}
+  >
+    {item}
+  </Text>
+</TouchableOpacity>
+
         ))}
       </View>
   )

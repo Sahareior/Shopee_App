@@ -2,6 +2,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, FlatList, Image, 
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 
 const { width: screenWidth } = Dimensions.get('window')
 
@@ -68,6 +69,7 @@ const Cart = () => {
       reviewCount: 156,
     }
   ])
+  const router = useRouter()
 
   const updateQuantity = (itemId, newQuantity) => {
     if (newQuantity < 1) return
@@ -99,6 +101,8 @@ const Cart = () => {
     // Remove from wishlist after moving to cart
     setWishlistItems(prevItems => prevItems.filter(item => item.id !== wishlistItem.id))
   }
+
+
 
   const removeFromWishlist = (itemId) => {
     setWishlistItems(prevItems => prevItems.filter(item => item.id !== itemId))
@@ -314,7 +318,7 @@ const Cart = () => {
             <Text style={styles.footerItems}>{getTotalItems()} items</Text>
           </View>
           
-          <TouchableOpacity style={styles.checkoutButton}>
+          <TouchableOpacity onPress={()=>router.push('/home/Homepage/payments') } style={styles.checkoutButton}>
             <Text style={styles.checkoutText}>Proceed to Checkout</Text>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
           </TouchableOpacity>

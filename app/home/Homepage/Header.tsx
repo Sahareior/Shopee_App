@@ -2,8 +2,10 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import React from 'react'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 
 const Header = () => {
+  const router = useRouter()
   return (
 <View style={styles.container}>
         <View style={styles.header}>
@@ -13,7 +15,7 @@ const Header = () => {
           source='https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=464' 
           contentFit="cover"
         />
-        <TouchableOpacity style={styles.activityButton}>
+        <TouchableOpacity onPress={()=> router.push('/home/ProfilePage/activity')} style={styles.activityButton}>
           <Text style={styles.activityText}>My Activity</Text>
         </TouchableOpacity>
       </View>
