@@ -1,10 +1,12 @@
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions } from 'react-native'
 import React from 'react'
 import { Image } from 'expo-image'
+import { useRouter } from 'expo-router'
 
 const { width: screenWidth } = Dimensions.get('window')
 
 const CommonScroller = ({ title }) => {
+    const router = useRouter();
     const arrayofProduct = [
         {
             id: 1,
@@ -99,8 +101,8 @@ const CommonScroller = ({ title }) => {
             {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.title}>{title}</Text>
-                <TouchableOpacity>
-                    <Text style={styles.seeAllText}>See All</Text>
+                <TouchableOpacity onPress={()=> router.push('/home/Homepage/viewAllComponents/SeeAllProducts')}>
+                    <Text style={styles.seeAllText}>See as All</Text>
                 </TouchableOpacity>
             </View>
             

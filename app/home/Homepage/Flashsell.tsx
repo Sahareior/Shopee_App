@@ -226,6 +226,10 @@ const FlashSale = () => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.flatListContent}
       />
+
+      <TouchableOpacity style={styles.viewAllButton} onPress={()=> router.push('/home/Homepage/_routeCompo/flashSellsDetails')}>
+        <Text style={styles.viewAllText}>View All</Text>
+      </TouchableOpacity>
     </View>
   )
 }
@@ -237,6 +241,28 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     paddingHorizontal: 11,
   },
+viewAllButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  alignSelf: 'center', // centers button horizontally
+  backgroundColor: '#f56363',
+  paddingVertical: 10,
+  paddingHorizontal: 20, // controls width
+  borderRadius: 30,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.15,
+  shadowRadius: 3.5,
+  elevation: 3,
+},
+viewAllText: {
+  color: '#fff',
+  fontSize: 15,
+  fontWeight: '600',
+  letterSpacing: 0.5,
+},
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -307,8 +333,8 @@ const styles = StyleSheet.create({
     width: 180,
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 15,
-    marginRight: 12,
+    padding: 10,
+    marginRight: 19,
    
   },
   cardTitle: {

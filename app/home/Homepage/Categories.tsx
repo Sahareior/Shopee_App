@@ -1,8 +1,10 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
 import React from 'react'
 import { Image } from 'expo-image'
+import { useRouter } from 'expo-router';
 
 const Categories = () => {
+  const router = useRouter();
   const categories = [
     {
       id: 1,
@@ -51,7 +53,7 @@ const Categories = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Categories</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={()=> router.push('/home/Homepage/viewAllComponents/viewallcategories')}>
           <Text style={styles.seeAllText}>See All</Text>
         </TouchableOpacity>
       </View>

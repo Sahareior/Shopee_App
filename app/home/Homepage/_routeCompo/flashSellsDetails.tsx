@@ -53,6 +53,7 @@ const FlashDetails = () => {
           zIndex: 12,
           alignItems: "center",
           paddingHorizontal: 10,
+          // paddingBottom:50
         }}
       >
         <View>
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     height:80,
     gap: 10,
-    zIndex: 75,
+    zIndex: 795,
   },
   discountButton: {
     paddingHorizontal: 16,

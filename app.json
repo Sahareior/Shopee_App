@@ -1,10 +1,11 @@
 {
   "expo": {
-        "androidStatusBar": {
-      "backgroundColor": "#ffffff",
-      "barStyle": "dark-content",
-      "translucent": false
-    },
+"androidStatusBar": {
+    "backgroundColor": "#ffffff",
+    "barStyle": "dark-content",
+    "translucent": true,
+    "hidden": false
+},
     "androidNavigationBar": {
       "backgroundColor": "#ffffff",
       "barStyle": "dark-content"
