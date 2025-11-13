@@ -1,8 +1,10 @@
 import { Stack } from "expo-router";
 import { useState, useEffect } from "react";
+import { Provider } from 'react-redux';
 import { StatusBar } from "expo-status-bar";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { store } from "./redux/store";
 
 export default function RootLayout() {
   const [user, setUser] = useState(true);
@@ -14,7 +16,9 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+<Provider store={store}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+<StatusBar style="dark" backgroundColor="#ffffff" />
 
       <Stack 
         screenOptions={{ 
@@ -59,5 +63,6 @@ export default function RootLayout() {
         />
       </Stack>
     </GestureHandlerRootView>
+   </Provider>
   );
 }

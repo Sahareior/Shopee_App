@@ -9,8 +9,12 @@ import Categories from '../home/Homepage/Categories';
 import FlashSale from '../home/Homepage/Flashsell';
 import JustForYou from '../home/Homepage/JustForYou';
 import ProfileHeader from '../home/ProfilePage/ProfileHeader';
+import { useGetAllProductsQuery } from '../redux/slices/jsonApiSlice';
 
 const Home = () => {
+const { data, error, isLoading } = useGetAllProductsQuery();    
+console.log('Products Data:', data);
+
   return (
     <>
       {/* 👇 Keep StatusBar outside SafeAreaView */}

@@ -1,7 +1,8 @@
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
 import React, { useState } from 'react'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ViewAllCategories = () => {
   const router = useRouter();
@@ -201,73 +202,84 @@ const ViewAllCategories = () => {
   const currentCategories = categories[activeTab] || [];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Categories</Text>
-          <TouchableOpacity onPress={()=> router.push('/home/Homepage/viewAllComponents/viewallcategories')}>
-            <Text style={styles.seeAllText}>See All</Text>
+<SafeAreaView style={styles.safeArea}>
+  <View style={styles.container}>
+    {/* Header */}
+    <View style={styles.header}>
+      <Text style={styles.title}>Categories</Text>
+      <TouchableOpacity 
+        style={styles.seeAllButton}
+        onPress={() => router.push('/home/Homepage/viewAllComponents/viewallcategories')}
+      >
+        <Text style={styles.seeAllText}>View All</Text>
+      </TouchableOpacity>
+    </View>
+
+    {/* Tab System */}
+    <ScrollView 
+      horizontal 
+      showsHorizontalScrollIndicator={false}
+      style={styles.tabContainer}
+    >
+      {tabs.map((tab) => (
+        <TouchableOpacity
+          key={tab}
+          style={[
+            styles.tab,
+            activeTab === tab && styles.activeTab
+          ]}
+          onPress={() => setActiveTab(tab)}
+        >
+          <Text style={[
+            styles.tabText,
+            activeTab === tab && styles.activeTabText
+          ]}>
+            {tab}
+          </Text>
+          {activeTab === tab && <View style={styles.activeTabIndicator} />}
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+
+    {/* Categories Grid */}
+    <ScrollView 
+      style={styles.scrollView}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <View style={styles.categoriesGrid}>
+        {currentCategories.map((category) => (
+          <TouchableOpacity 
+            key={category.id} 
+            style={styles.categoryCard}
+            activeOpacity={0.7}
+          >
+            <View style={styles.imagesContainer}>
+              <View style={styles.imagesGrid}>
+                {category.images.map((image, index) => (
+                  <Image 
+                    key={index}
+                    source={image} 
+                    style={[
+                      styles.categoryImage,
+                      index === 0 && styles.topLeftImage,
+                      index === 1 && styles.topRightImage,
+                      index === 2 && styles.bottomLeftImage,
+                      index === 3 && styles.bottomRightImage
+                    ]}
+                    contentFit="cover"
+                  />
+                ))}
+              </View>
+              <View style={styles.categoryOverlay} />
+            </View>
+            <Text style={styles.categoryName}>{category.name}</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Tab System */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.tabContainer}
-          contentContainerStyle={styles.tabContentContainer}
-        >
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                styles.tab,
-                activeTab === tab && styles.activeTab
-              ]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={[
-                styles.tabText,
-                activeTab === tab && styles.activeTabText
-              ]}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Categories Grid */}
-        <ScrollView 
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.categoriesGrid}>
-            {currentCategories.map((category) => (
-              <TouchableOpacity key={category.id} style={styles.categoryCard}>
-                <View style={styles.imagesGrid}>
-                  {category.images.map((image, index) => (
-                    <Image 
-                      key={index}
-                      source={image} 
-                      style={[
-                        styles.categoryImage,
-                        index === 0 && styles.topLeftImage,
-                        index === 1 && styles.topRightImage,
-                        index === 2 && styles.bottomLeftImage,
-                        index === 3 && styles.bottomRightImage
-                      ]}
-                      contentFit="cover"
-                    />
-                  ))}
-                </View>
-                <Text style={styles.categoryName}>{category.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+        ))}
       </View>
-    </SafeAreaView>
+    </ScrollView>
+  </View>
+</SafeAreaView>
   )
 }
 
@@ -276,106 +288,143 @@ export default ViewAllCategories
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#fefefe',
   },
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+    paddingHorizontal: 4,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
+  },
+  seeAllButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   seeAllText: {
-    fontSize: 14,
-    color: '#004CFF',
+    fontSize: 15,
+    color: '#0066ff',
     fontWeight: '600',
+    letterSpacing: 0.3,
   },
   tabContainer: {
-    marginBottom: 20,
-    maxHeight: 40,
-  },
-  tabContentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: 24,
+    maxHeight: 44,
   },
   tab: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    marginRight: 10,
-    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    marginRight: 12,
+    borderRadius: 24,
     backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   activeTab: {
-    backgroundColor: '#004CFF',
-    borderColor: '#004CFF',
+    backgroundColor: '#ffffff',
+    borderColor: '#0066ff',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#666',
+    letterSpacing: 0.2,
   },
   activeTabText: {
-    color: '#fff',
+    color: '#0066ff',
+  },
+  activeTabIndicator: {
+    position: 'absolute',
+    bottom: -2,
+    left: '25%',
+    right: '25%',
+    height: 3,
+    backgroundColor: '#0066ff',
+    borderRadius: 2,
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingBottom: 20,
   },
   categoryCard: {
     width: '48%',
     alignItems: 'center',
     marginBottom: 20,
   },
+  imagesContainer: {
+    width: '100%',
+    position: 'relative',
+    marginBottom: 12,
+  },
   imagesGrid: {
     width: '100%',
-    height: 140,
+    height: 160,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 3,
-    borderRadius: 12,
+    gap: 2,
+    borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 10,
     backgroundColor: '#f8f9fa',
     borderWidth: 1,
     borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   categoryImage: {
     width: '49%',
     height: '49%',
   },
   topLeftImage: {
-    borderTopLeftRadius: 12,
+    borderTopLeftRadius: 16,
   },
   topRightImage: {
-    borderTopRightRadius: 12,
+    borderTopRightRadius: 16,
   },
   bottomLeftImage: {
-    borderBottomLeftRadius: 12,
+    borderBottomLeftRadius: 16,
   },
   bottomRightImage: {
-    borderBottomRightRadius: 12,
+    borderBottomRightRadius: 16,
+  },
+  categoryOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.02)',
   },
   categoryName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#1a1a1a',
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
 })

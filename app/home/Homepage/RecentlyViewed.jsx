@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Dimensions } from 'react-native'
 import React, { useState } from 'react'
 import { Image } from 'expo-image'
-import { StatusBar } from 'expo-status-bar'
+
 import { useRouter } from 'expo-router'
 
 const RecentlyViewed = ({from}) => {
@@ -120,7 +120,7 @@ console.log(from)
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+  
 
       {/* Navigation Tabs */}
 {

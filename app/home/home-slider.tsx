@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
-import bub1 from '../../assets/images/b1.png'
+import React, { useState, useRef, useEffect } from 'react'
 import { Image } from 'expo-image'
+import bub1 from '../../assets/images/b1.png'
 import slider1 from '../../assets/images/slider/slider1.png'
 import slider2 from '../../assets/images/slider/slider2.png'
 
@@ -9,6 +9,7 @@ const { width: screenWidth } = Dimensions.get('window')
 
 const HomeSlider = () => {
   const [activeSlide, setActiveSlide] = useState(0)
+  const scrollRef = useRef(null)
 
   const sliderData = [
     {
@@ -33,12 +34,30 @@ const HomeSlider = () => {
 
   const isLastSlide = (index) => index === sliderData.length - 1
 
+  // 👇 Auto-slide logic
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nextSlide = (activeSlide + 1) % sliderData.length
+      setActiveSlide(nextSlide)
+
+      if (scrollRef.current) {
+        scrollRef.current.scrollTo({
+          x: nextSlide * screenWidth,
+          animated: true,
+        })
+      }
+    }, 4000) // Change slide every 4 seconds
+
+    return () => clearInterval(interval)
+  }, [activeSlide, sliderData.length])
+
   return (
     <View style={styles.container}>
       <Image source={bub1} style={styles.image1} contentFit="contain" />
       
       <View style={styles.sliderContainer}>
         <ScrollView
+          ref={scrollRef}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
@@ -67,21 +86,20 @@ const HomeSlider = () => {
                     </TouchableOpacity>
                   )}
                 </View>
-                
-                {/* Pagination Dots inside the card */}
-              
               </View>
-                <View style={styles.pagination}>
-                  {sliderData.map((_, dotIndex) => (
-                    <View
-                      key={dotIndex}
-                      style={[
-                        styles.dot,
-                        activeSlide === dotIndex ? styles.activeDot : styles.inactiveDot
-                      ]}
-                    />
-                  ))}
-                </View>
+
+              {/* Pagination */}
+              <View style={styles.pagination}>
+                {sliderData.map((_, dotIndex) => (
+                  <View
+                    key={dotIndex}
+                    style={[
+                      styles.dot,
+                      activeSlide === dotIndex ? styles.activeDot : styles.inactiveDot
+                    ]}
+                  />
+                ))}
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -111,11 +129,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
-    // marginTop: 100,
   },
   slide: {
     width: screenWidth - 32,
-    height: 900,
+    height: 600, // Reduced from 900 to prevent excessive scrolling
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 10,
@@ -144,7 +161,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
   },
   textContainer: {
-    padding: 10,
+    padding: 20,
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -188,13 +205,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    height:10,
-    width:10,
-    
     paddingVertical: 20,
-    paddingHorizontal:20,
-    borderTopWidth: 1,
-
   },
   dot: {
     width: 8,
