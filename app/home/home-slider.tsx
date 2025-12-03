@@ -4,10 +4,12 @@ import { Image } from 'expo-image'
 import bub1 from '../../assets/images/b1.png'
 import slider1 from '../../assets/images/slider/slider1.png'
 import slider2 from '../../assets/images/slider/slider2.png'
+import { useRouter } from 'expo-router'
 
 const { width: screenWidth } = Dimensions.get('window')
 
 const HomeSlider = () => {
+  const router = useRouter()
   const [activeSlide, setActiveSlide] = useState(0)
   const scrollRef = useRef(null)
 
@@ -81,7 +83,7 @@ const HomeSlider = () => {
                   
                   {/* Explore Button - Only show on last slide */}
                   {isLastSlide(index) && (
-                    <TouchableOpacity style={styles.exploreButton}>
+                    <TouchableOpacity onPress={()=> router.push('/(tabs)/home')} style={styles.exploreButton}>
                       <Text style={styles.exploreButtonText}>Explore</Text>
                     </TouchableOpacity>
                   )}

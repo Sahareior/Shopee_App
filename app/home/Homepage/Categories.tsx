@@ -2,71 +2,78 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-nati
 import React from 'react'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router';
+import { useGetCategoriesQuery } from '@/app/redux/slices/jsonApiSlice';
 
 const Categories = () => {
   const router = useRouter();
-  const categories = [
-    {
-      id: 1,
-      name: 'Clothing',
-      images: [
-        'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60'
-      ]
-    },
-    {
-      id: 2,
-      name: 'Electronics',
-      images: [
-        'https://images.unsplash.com/photo-1498049794561-7780e7231661?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60'
-      ]
-    },
-    {
-      id: 3,
-      name: 'Home & Garden',
-      images: [
-        'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1513694203232-719a280e022f?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1494526585095-c41746248156?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60'
-      ]
-    },
-    {
-      id: 4,
-      name: 'Beauty',
-      images: [
-        'https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1526045478516-99145907023c?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-        'https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60'
-      ]
-    }
-  ]
+
+  const { data: categories, isLoading, error } = useGetCategoriesQuery();
+
+  // Handle loading and error states
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading categories...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text>Error loading categories</Text>
+      </View>
+    );
+  }
+
+  // Function to generate multiple images for grid view
+  // Since API only provides single image, we'll duplicate it for the grid
+  const generateImagesArray = (mainImageUrl) => {
+    // Create 4 images (for 2x2 grid) using the main image
+    // You could modify this to use different images if available
+    return [
+      mainImageUrl,
+      mainImageUrl,
+      mainImageUrl,
+      mainImageUrl
+    ];
+  };
+
+  // Filter to show only top-level categories (where parentCategory is null)
+  // Or show all categories based on your needs
+  const topLevelCategories = categories?.filter(cat => cat.parentCategory === null) || [];
+  
+  // If you want to show all categories, just use categories array
+  const displayCategories = categories || [];
+
+
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Categories</Text>
-        <TouchableOpacity onPress={()=> router.push('/home/Homepage/viewAllComponents/viewallcategories')}>
+        <TouchableOpacity onPress={() => router.push('/home/Homepage/viewAllComponents/viewallcategories')}>
           <Text style={styles.seeAllText}>See All</Text>
         </TouchableOpacity>
       </View>
 
       {/* Categories Grid */}
       <View style={styles.categoriesGrid}>
-        {categories.map((category) => (
-          <TouchableOpacity key={category.id} style={styles.categoryCard}>
+        {displayCategories.slice(0,4).map((category) => (
+          <TouchableOpacity 
+            key={category._id} 
+            style={styles.categoryCard}
+            onPress={() => {
+              // Navigate to category products page
+              router.push(`/category/${category.slug}`);
+            }}
+          >
             <View style={styles.imagesGrid}>
-              {category.images.map((image, index) => (
+              {generateImagesArray(category.image).map((image, index) => (
                 <Image 
                   key={index}
-                  source={image} 
+                  source={{ uri: image }} 
                   style={[
                     styles.categoryImage,
                     index === 0 && styles.topLeftImage,
@@ -124,8 +131,7 @@ const styles = StyleSheet.create({
     height: 140,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    // gap: ,
-    gap:3,
+    gap: 3,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 10,
@@ -155,4 +161,4 @@ const styles = StyleSheet.create({
     color: '#000',
     textAlign: 'center',
   },
-})
+});

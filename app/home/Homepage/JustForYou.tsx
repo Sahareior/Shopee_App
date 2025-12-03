@@ -1,162 +1,21 @@
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native'
 import React, { useState } from 'react'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 
-const JustForYou = () => {
+const JustForYou = ({data}) => {
   const [currentPage, setCurrentPage] = useState(1)
   const router = useRouter()
-
-  // Sample products data
-  const allProducts = [
-    {
-      id: 1,
-      name: 'Wireless Earbuds Pro',
-      price: '$79.99',
-      originalPrice: '$99.99',
-      image: 'https://images.unsplash.com/photo-1590658165737-15a047b8b5e0?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.5,
-      discount: '20% OFF'
-    },
-    {
-      id: 2,
-      name: 'Smart Watch Series 5',
-      price: '$199.99',
-      originalPrice: '$249.99',
-      image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.8,
-      discount: '20% OFF'
-    },
-    {
-      id: 3,
-      name: 'Bluetooth Speaker',
-      price: '$49.99',
-      originalPrice: '$69.99',
-      image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.3,
-      discount: '29% OFF'
-    },
-    {
-      id: 4,
-      name: 'Gaming Mouse RGB',
-      price: '$39.99',
-      originalPrice: '$59.99',
-      image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.6,
-      discount: '33% OFF'
-    },
-    {
-      id: 5,
-      name: 'Mechanical Keyboard',
-      price: '$89.99',
-      originalPrice: '$119.99',
-      image: 'https://images.unsplash.com/photo-1541140532154-b024d705b90a?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.7,
-      discount: '25% OFF'
-    },
-    {
-      id: 6,
-      name: 'Laptop Stand Aluminum',
-      price: '$29.99',
-      originalPrice: '$39.99',
-      image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.2,
-      discount: '25% OFF'
-    },
-    {
-      id: 7,
-      name: 'USB-C Hub 7-in-1',
-      price: '$34.99',
-      originalPrice: '$49.99',
-      image: 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.4,
-      discount: '30% OFF'
-    },
-    {
-      id: 8,
-      name: 'Wireless Charger Fast',
-      price: '$24.99',
-      originalPrice: '$34.99',
-      image: 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.1,
-      discount: '29% OFF'
-    },
-    {
-      id: 9,
-      name: 'Noise Cancelling Headphones',
-      price: '$149.99',
-      originalPrice: '$199.99',
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.9,
-      discount: '25% OFF'
-    },
-    {
-      id: 10,
-      name: 'Tablet Stand Adjustable',
-      price: '$19.99',
-      originalPrice: '$29.99',
-      image: 'https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.0,
-      discount: '33% OFF'
-    },
-    {
-      id: 11,
-      name: 'Phone Case Premium',
-      price: '$14.99',
-      originalPrice: '$24.99',
-      image: 'https://images.unsplash.com/photo-1556656793-08538906a9f8?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.3,
-      discount: '40% OFF'
-    },
-    {
-      id: 12,
-      name: 'Power Bank 20000mAh',
-      price: '$39.99',
-      originalPrice: '$59.99',
-      image: 'https://images.unsplash.com/photo-1597766589842-320e6b3d2c80?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.5,
-      discount: '33% OFF'
-    },
-    {
-      id: 13,
-      name: 'Webcam 4K HD',
-      price: '$59.99',
-      originalPrice: '$79.99',
-      image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.6,
-      discount: '25% OFF'
-    },
-    {
-      id: 14,
-      name: 'Desk Lamp LED',
-      price: '$34.99',
-      originalPrice: '$49.99',
-      image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.2,
-      discount: '30% OFF'
-    },
-    {
-      id: 15,
-      name: 'Monitor Arm Stand',
-      price: '$79.99',
-      originalPrice: '$99.99',
-      image: 'https://images.unsplash.com/photo-1586953983827-b6622f2ad0ab?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.7,
-      discount: '20% OFF'
-    },
-    {
-      id: 16,
-      name: 'Cable Organizer Kit',
-      price: '$12.99',
-      originalPrice: '$19.99',
-      image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.1,
-      discount: '35% OFF'
-    }
-  ]
-
+  
+  // Use the data prop instead of static array
+  const allProducts = data || []
+  
   const productsPerPage = 8
   const totalPages = Math.ceil(allProducts.length / productsPerPage)
+  
+  // Get screen width for responsive design
+  const { width } = Dimensions.get('window')
+  const cardWidth = (width - 34) / 2 // 11px padding on each side + 12px gap
 
   // Get products for current page
   const getCurrentPageProducts = () => {
@@ -169,7 +28,8 @@ const JustForYou = () => {
   const groupProductsIntoPairs = (products) => {
     const pairs = []
     for (let i = 0; i < products.length; i += 2) {
-      pairs.push(products.slice(i, i + 2))
+      const pair = products.slice(i, i + 2)
+      pairs.push(pair)
     }
     return pairs
   }
@@ -180,7 +40,22 @@ const JustForYou = () => {
   // Generate page numbers for pagination
   const getPageNumbers = () => {
     const pages = []
-    for (let i = 1; i <= totalPages; i++) {
+    const maxPagesToShow = 5 // Show max 5 page numbers
+    let startPage = 1
+    let endPage = totalPages
+    
+    if (totalPages > maxPagesToShow) {
+      const halfMaxPages = Math.floor(maxPagesToShow / 2)
+      startPage = Math.max(1, currentPage - halfMaxPages)
+      endPage = startPage + maxPagesToShow - 1
+      
+      if (endPage > totalPages) {
+        endPage = totalPages
+        startPage = Math.max(1, endPage - maxPagesToShow + 1)
+      }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
       pages.push(i)
     }
     return pages
@@ -188,39 +63,112 @@ const JustForYou = () => {
 
   const renderProductRow = (pair, index) => (
     <View key={`row-${index}`} style={styles.productRow}>
-      {pair.map((product) => (
-        <TouchableOpacity onPress={()=> router.push('/home/Homepage/_routeCompo/details')} key={product.id} style={styles.productCard}>
-          <View style={styles.imageContainer}>
-            <Image 
-              source={product.image} 
-              style={styles.productImage}
-              contentFit="cover"
-            />
-            {product.discount && (
-              <View style={styles.discountBadge}>
-                <Text style={styles.discountText}>{product.discount}</Text>
+      {pair.map((product) => {
+        // Calculate discount percentage if discountPrice exists
+        const hasDiscount = product.discountPrice && product.price > product.discountPrice
+        const discountPercentage = hasDiscount 
+          ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
+          : null
+        
+        // Check if product is new
+        const isNewItem = product.labels?.includes('new_item')
+
+        return (
+          <View key={product._id} style={[
+            styles.productCardWrapper,
+            // If there's only one item in the pair, apply specific styling
+            pair.length === 1 && styles.singleItemWrapper
+          ]}>
+            <TouchableOpacity 
+              onPress={()=> router.push(`/product/${product._id}`)} 
+              style={[
+                styles.productCard,
+                // Fixed width for single items
+                pair.length === 1 && styles.singleItemCard
+              ]}
+            >
+              <View style={styles.imageContainer}>
+                <Image 
+                  source={{ uri: product.images[0] }} 
+                  style={styles.productImage}
+                  contentFit="cover"
+                />
+                {/* Discount Badge */}
+                {discountPercentage && (
+                  <View style={styles.discountBadge}>
+                    <Text style={styles.discountText}>{discountPercentage}% OFF</Text>
+                  </View>
+                )}
+                {/* New Badge */}
+                {isNewItem && (
+                  <View style={styles.newBadge}>
+                    <Text style={styles.newBadgeText}>NEW</Text>
+                  </View>
+                )}
               </View>
-            )}
+              
+              <View style={styles.productInfo}>
+                <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+                
+                {/* Brand */}
+                <Text style={styles.brandText} numberOfLines={1}>{product.brand}</Text>
+                
+                <View style={styles.ratingContainer}>
+                  <Text style={styles.rating}>⭐ {product.rating?.toFixed(1) || '4.0'}</Text>
+                  <Text style={styles.reviews}>({product.reviews || 0})</Text>
+                </View>
+                
+                <View style={styles.priceContainer}>
+                  {hasDiscount ? (
+                    <>
+                      <Text style={styles.currentPrice}>${product.discountPrice.toFixed(2)}</Text>
+                      <Text style={styles.originalPrice}>${product.price.toFixed(2)}</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.currentPrice}>${product.price.toFixed(2)}</Text>
+                  )}
+                </View>
+
+                {/* Labels */}
+                {product.labels && product.labels.length > 0 && (
+                  <View style={styles.labelsContainer}>
+                    {product.labels.slice(0, 2).map((label, labelIndex) => {
+                      // Get display text for label
+                      let displayText = ''
+                      switch(label) {
+                        case 'new_item':
+                          displayText = 'New'
+                          break
+                        case 'top_product':
+                          displayText = 'Top'
+                          break
+                        case 'just_for_you':
+                          displayText = 'For You'
+                          break
+                        case 'flash_deal':
+                          displayText = 'Flash'
+                          break
+                        default:
+                          displayText = label
+                      }
+
+                      return (
+                        <View key={labelIndex} style={styles.labelChip}>
+                          <Text style={styles.labelText}>{displayText}</Text>
+                        </View>
+                      )
+                    })}
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
           </View>
-          
-          <View style={styles.productInfo}>
-            <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-            
-            <View style={styles.ratingContainer}>
-              <Text style={styles.rating}>⭐ {product.rating}</Text>
-            </View>
-            
-            <View style={styles.priceContainer}>
-              <Text style={styles.currentPrice}>{product.price}</Text>
-              {product.originalPrice && (
-                <Text style={styles.originalPrice}>{product.originalPrice}</Text>
-              )}
-            </View>
-          </View>
-        </TouchableOpacity>
-      ))}
+        )
+      })}
     </View>
   )
+
+  const pageNumbers = getPageNumbers()
 
   return (
     <View style={styles.container}>
@@ -231,14 +179,118 @@ const JustForYou = () => {
       </View>
 
       {/* Products Grid using ScrollView instead of FlatList */}
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.productsContainer}
-      >
-        {productPairs.map((pair, index) => renderProductRow(pair, index))}
-      </ScrollView>
+      {allProducts.length > 0 ? (
+        <>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.productsContainer}
+          >
+            {productPairs.map((pair, index) => renderProductRow(pair, index))}
+            
+            {/* Add empty cards if last row has only one item (for better layout) */}
+            {productPairs.length > 0 && productPairs[productPairs.length - 1].length === 1 && (
+              <View style={styles.productRow}>
+                <View style={[styles.productCardWrapper, styles.emptyCardWrapper]}>
+                  {/* Empty placeholder to maintain layout */}
+                </View>
+              </View>
+            )}
+          </ScrollView>
 
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <View style={styles.paginationContainer}>
+              {/* Previous Button */}
+              <TouchableOpacity 
+                style={[
+                  styles.paginationButton, 
+                  styles.navButton,
+                  currentPage === 1 && styles.paginationButtonDisabled
+                ]}
+                onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                <Text style={[
+                  styles.paginationButtonText,
+                  currentPage === 1 && styles.paginationButtonTextDisabled
+                ]}>‹</Text>
+              </TouchableOpacity>
 
+              {/* First page button (show if not in current range) */}
+              {pageNumbers[0] > 1 && (
+                <>
+                  <TouchableOpacity
+                    style={[styles.paginationButton, styles.numberButton]}
+                    onPress={() => setCurrentPage(1)}
+                  >
+                    <Text style={styles.paginationButtonText}>1</Text>
+                  </TouchableOpacity>
+                  {pageNumbers[0] > 2 && (
+                    <Text style={styles.ellipsisText}>...</Text>
+                  )}
+                </>
+              )}
+
+              {/* Page Numbers */}
+              <View style={styles.pageNumbersContainer}>
+                {pageNumbers.map((pageNum) => (
+                  <TouchableOpacity
+                    key={pageNum}
+                    style={[
+                      styles.paginationButton,
+                      styles.numberButton,
+                      currentPage === pageNum && styles.activePageButton
+                    ]}
+                    onPress={() => setCurrentPage(pageNum)}
+                  >
+                    <Text style={[
+                      styles.paginationButtonText,
+                      currentPage === pageNum && styles.activePageText
+                    ]}>
+                      {pageNum}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Last page button (show if not in current range) */}
+              {pageNumbers[pageNumbers.length - 1] < totalPages && (
+                <>
+                  {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
+                    <Text style={styles.ellipsisText}>...</Text>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.paginationButton, styles.numberButton]}
+                    onPress={() => setCurrentPage(totalPages)}
+                  >
+                    <Text style={styles.paginationButtonText}>{totalPages}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* Next Button */}
+              <TouchableOpacity 
+                style={[
+                  styles.paginationButton, 
+                  styles.navButton,
+                  currentPage === totalPages && styles.paginationButtonDisabled
+                ]}
+                onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <Text style={[
+                  styles.paginationButtonText,
+                  currentPage === totalPages && styles.paginationButtonTextDisabled
+                ]}>›</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </>
+      ) : (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No products available</Text>
+        </View>
+      )}
     </View>
   )
 }
@@ -268,14 +320,39 @@ const styles = StyleSheet.create({
   productsContainer: {
     paddingBottom: 20,
   },
+  emptyContainer: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+  },
   productRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
     gap: 12,
   },
-  productCard: {
+  productCardWrapper: {
     flex: 1,
+    // This ensures both cards in a row have equal width
+  },
+  singleItemWrapper: {
+    // When there's only one item, we need to position it properly
+    alignItems: 'flex-start', // Align to the start (left)
+    width: '50%', // Take only half the width
+  },
+  singleItemCard: {
+    // Fixed width for single items to match paired items
+    width: '100%',
+  },
+  emptyCardWrapper: {
+    // Empty placeholder for layout
+    opacity: 0,
+  },
+  productCard: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 12,
@@ -289,6 +366,8 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: '#f0f0f0',
+    // Ensure all cards have the same height
+    flex: 1,
   },
   imageContainer: {
     position: 'relative',
@@ -298,6 +377,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 120,
     borderRadius: 8,
+    backgroundColor: '#f8f9fa',
   },
   discountBadge: {
     position: 'absolute',
@@ -313,6 +393,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
+  newBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  newBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: 'white',
+  },
   productInfo: {
     flex: 1,
   },
@@ -320,20 +414,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 6,
+    marginBottom: 4,
     lineHeight: 18,
+    height: 36, // Fixed height for 2 lines
+  },
+  brandText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 6,
   },
   ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
   rating: {
     fontSize: 12,
-    color: '#666',
+    color: '#FFD700',
+    fontWeight: '600',
+  },
+  reviews: {
+    fontSize: 11,
+    color: '#999',
+    marginLeft: 2,
   },
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    marginBottom: 8,
   },
   currentPrice: {
     fontSize: 16,
@@ -344,6 +452,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     textDecorationLine: 'line-through',
+    marginLeft: 6,
+  },
+  labelsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  labelChip: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  labelText: {
+    fontSize: 10,
+    color: '#666',
+    fontWeight: '500',
   },
   paginationContainer: {
     flexDirection: 'row',
@@ -355,12 +480,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   paginationButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 44,
+    minWidth: 36,
+    minHeight: 36,
   },
   navButton: {
     backgroundColor: '#f8f9fa',
@@ -371,7 +497,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     borderWidth: 1,
     borderColor: '#e9ecef',
-    marginHorizontal: 4,
+    marginHorizontal: 2,
   },
   activePageButton: {
     backgroundColor: '#004CFF',
@@ -396,5 +522,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
+  },
+  ellipsisText: {
+    fontSize: 14,
+    color: '#666',
+    marginHorizontal: 4,
   },
 })

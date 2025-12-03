@@ -5,10 +5,14 @@ import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import RecentlyViewed from '../home/Homepage/RecentlyViewed'
 import JustForYou from '../home/Homepage/JustForYou'
+import { useGetProductsByTypesQuery } from '../redux/slices/jsonApiSlice'
 
 const { width: screenWidth } = Dimensions.get('window')
 
 const Wishlist = () => {
+  const {data:productByType} = useGetProductsByTypesQuery('top_product')
+  const {data:forYou} = useGetProductsByTypesQuery('just_for_you')
+  const {data:recently_viewed} = useGetProductsByTypesQuery('recently_viewed')
   const [wishlistItems, setWishlistItems] = useState([
     {
       id: 1,
@@ -157,7 +161,7 @@ const Wishlist = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
 
-        <RecentlyViewed from='home' />
+        <RecentlyViewed from='home' data={productByType} />
         {/* Header */}
         <View style={styles.header}>
           <View>
@@ -229,7 +233,7 @@ const Wishlist = () => {
 
         {/* Recommendations */}
 <View style={{paddingTop:30}}>
-  <JustForYou />
+  <JustForYou data={forYou} />
 </View>
       </ScrollView>
     </SafeAreaView>

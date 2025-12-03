@@ -1,13 +1,16 @@
 import { Stack } from "expo-router";
 import { useState, useEffect } from "react";
-import { Provider } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import { StatusBar } from "expo-status-bar";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { store } from "./redux/store";
 
-export default function RootLayout() {
-  const [user, setUser] = useState(true);
+function RootLayoutNav() {
+  const authState = useSelector((state) => state.auth);
+  const isAuthenticated = authState.isAuthenticated;
+
+  console.log(authState,isAuthenticated)
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -16,24 +19,21 @@ export default function RootLayout() {
   }, []);
 
   return (
-<Provider store={store}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-<StatusBar style="dark" backgroundColor="#ffffff" />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <StatusBar style="dark" backgroundColor="#ffffff" />
 
       <Stack 
         screenOptions={{ 
           headerShown: false,
-          // Change to 'slide_from_bottom' for better visual continuity
           animation: 'slide_from_bottom',
           animationDuration: 350,
           gestureEnabled: true,
           gestureDirection: 'horizontal',
-          // CRITICAL: This keeps the previous screen visible during transition
           presentation: 'card',
           contentStyle: { backgroundColor: '#ffffff' },
         }}
       >
-        {!user ? (
+        {!isAuthenticated ? (
           <Stack.Screen 
             name="index" 
             options={{
@@ -50,7 +50,16 @@ export default function RootLayout() {
           />
         )}
         
-        {/* Add individual screen configurations for better control */}
+        {/* Auth screens */}
+        <Stack.Screen 
+          name="createAccount" 
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            animationDuration: 400,
+          }}
+        />
+        
         <Stack.Screen 
           name="details" 
           options={{
@@ -58,11 +67,18 @@ export default function RootLayout() {
             animation: 'slide_from_right',
             gestureEnabled: true,
             gestureDirection: 'horizontal',
-            animationDuration: 400, // Slightly longer for smoother effect
+            animationDuration: 400,
           }} 
         />
       </Stack>
     </GestureHandlerRootView>
-   </Provider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <Provider store={store}>
+      <RootLayoutNav />
+    </Provider>
   );
 }

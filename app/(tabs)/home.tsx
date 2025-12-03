@@ -9,11 +9,15 @@ import Categories from '../home/Homepage/Categories';
 import FlashSale from '../home/Homepage/Flashsell';
 import JustForYou from '../home/Homepage/JustForYou';
 import ProfileHeader from '../home/ProfilePage/ProfileHeader';
-import { useGetAllProductsQuery } from '../redux/slices/jsonApiSlice';
+import {  useGetProductsByTypesQuery } from '../redux/slices/jsonApiSlice';
 
 const Home = () => {
-const { data, error, isLoading } = useGetAllProductsQuery();    
-console.log('Products Data:', data);
+  
+const {data:productByType} = useGetProductsByTypesQuery('top_product')
+const {data:newItems} = useGetProductsByTypesQuery('new_item')
+const {data:forYou} = useGetProductsByTypesQuery('just_for_you')
+
+
 
   return (
     <>
@@ -24,11 +28,11 @@ console.log('Products Data:', data);
         <ScrollView>
           <ProfileHeader />
           <Categories />
-          <RecentlyViewed from="home" />
+          <RecentlyViewed data={productByType} from="home" />
           {/* <Stories /> */}
-          <CommonScroller title={'New Items'} />
+          <CommonScroller data={newItems} title={'New Items'} />
           <FlashSale />
-          <JustForYou />
+          <JustForYou data={forYou} />
         </ScrollView>
       </SafeAreaView>
     </>

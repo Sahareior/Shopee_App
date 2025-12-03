@@ -1,17 +1,16 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Dimensions } from 'react-native'
 import React, { useState } from 'react'
 import { Image } from 'expo-image'
-
 import { useRouter } from 'expo-router'
 
-const RecentlyViewed = ({from}) => {
+const RecentlyViewed = ({from, data}) => {
   const [activeStatus, setActiveStatus] = useState('To Pay')
   const [storyModalVisible, setStoryModalVisible] = useState(false)
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [currentUserIndex, setCurrentUserIndex] = useState(0)
 
   const router = useRouter()
-console.log(from)
+
   // Sample data for recently viewed profiles with stories
   const recentlyViewed = [
     {
@@ -118,50 +117,112 @@ console.log(from)
   const currentUser = recentlyViewed[currentUserIndex]
   const currentStory = currentUser?.stories[currentStoryIndex]
 
+  // Render product items when from='home'
+  const renderProductItem = (product) => (
+    <TouchableOpacity 
+      key={product._id} 
+      style={styles.productItem}
+      onPress={() => {
+        // Navigate to product detail page
+        router.push(`/product/${product._id}`)
+      }}
+    >
+      <View style={styles.productImageContainer}>
+        <Image 
+          source={{ uri: product.images[0] }} 
+          style={styles.productImage}
+          contentFit="cover"
+        />
+        {/* Show discount badge if discountPrice exists */}
+        {product.discountPrice && product.price > product.discountPrice && (
+          <View style={styles.discountBadge}>
+            <Text style={styles.discountText}>
+              {Math.round(((product.price - product.discountPrice) / product.price) * 100)}% OFF
+            </Text>
+          </View>
+        )}
+      </View>
+      <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+      <View style={styles.priceContainer}>
+        {product.discountPrice ? (
+          <>
+            <Text style={styles.discountedPrice}>${product.discountPrice.toFixed(2)}</Text>
+            <Text style={styles.originalPrice}>${product.price.toFixed(2)}</Text>
+          </>
+        ) : (
+          <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+        )}
+      </View>
+      {/* Rating */}
+      <View style={styles.ratingContainer}>
+        <Text style={styles.rating}>⭐ {product.rating.toFixed(1)}</Text>
+        <Text style={styles.reviews}>({product.reviews})</Text>
+      </View>
+    </TouchableOpacity>
+  )
+
+  // Render user items when from!='home'
+  const renderUserItem = (user, index) => (
+    <TouchableOpacity 
+      key={user.id} 
+      style={styles.userItem}
+      onPress={() => openStory(index, 0)}
+    >
+      <View style={styles.imageContainer}>
+        <Image 
+          source={{ uri: user.image }} 
+          style={styles.userImage}
+          contentFit="cover"
+        />
+        <View style={styles.timeBadge}>
+          <Text style={styles.timeText}>{user.time}</Text>
+        </View>
+      </View>
+      <Text style={styles.userName}>{user.name}</Text>
+    </TouchableOpacity>
+  )
+
   return (
     <View style={styles.container}>
-  
-
       {/* Navigation Tabs */}
-{
-  from !=='home' && (
-          <View style={styles.navigationTabs}>
-        {statusItems.map((item) => (
-<TouchableOpacity
-  key={item}
-  style={[
-    styles.tab,
-    activeStatus === item && styles.tabActive
-  ]}
-  onPress={() => {
-    if (item === 'To Receive') {
-      router.push('/home/Homepage/_routeCompo/Toreceive');
-    } else {
-      setActiveStatus(item);
-    }
-  }}
->
-  <Text
-    style={[
-      styles.tabText,
-      activeStatus === item && styles.tabTextActive
-    ]}
-  >
-    {item}
-  </Text>
-</TouchableOpacity>
+      {from !== 'home' && (
+        <View style={styles.navigationTabs}>
+          {statusItems.map((item) => (
+            <TouchableOpacity
+              key={item}
+              style={[
+                styles.tab,
+                activeStatus === item && styles.tabActive
+              ]}
+              onPress={() => {
+                if (item === 'To Receive') {
+                  router.push('/home/Homepage/_routeCompo/Toreceive')
+                } else {
+                  setActiveStatus(item)
+                }
+              }}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeStatus === item && styles.tabTextActive
+                ]}
+              >
+                {item}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
-        ))}
-      </View>
-  )
-}
-
-      {/* Recently Viewed Section */}
+      {/* Recently Viewed / Top Products Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-         {
-          from === 'home'?  <Text style={styles.title}>Top Products</Text>:  <Text style={styles.title}>Recently Viewed</Text>
-         }
+          {from === 'home' ? (
+            <Text style={styles.title}>Top Products</Text>
+          ) : (
+            <Text style={styles.title}>Recently Viewed</Text>
+          )}
           <TouchableOpacity>
             <Text style={styles.seeAllText}>See All</Text>
           </TouchableOpacity>
@@ -171,90 +232,80 @@ console.log(from)
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContainer}
         >
-          {recentlyViewed.map((user, index) => (
-            <TouchableOpacity 
-              key={user.id} 
-              style={styles.userItem}
-              onPress={() => openStory(index, 0)}
-            >
-              <View style={styles.imageContainer}>
-                <Image 
-                  source={user.image} 
-                  style={styles.userImage}
-                  contentFit="cover"
-                />
-                <View style={styles.timeBadge}>
-                  <Text style={styles.timeText}>{user.time}</Text>
-                </View>
-              </View>
-              <Text style={styles.userName}>{user.name}</Text>
-            </TouchableOpacity>
-          ))}
+          {from === 'home' && data ? (
+            // Render product items when from='home'
+            data.map(product => renderProductItem(product))
+          ) : (
+            // Render user items when from!='home'
+            recentlyViewed.map((user, index) => renderUserItem(user, index))
+          )}
         </ScrollView>
       </View>
 
-      {/* Story Modal */}
-      <Modal
-        visible={storyModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={closeStory}
-      >
-        <View style={styles.modalContainer}>
-          {/* Progress Bars */}
-          <View style={styles.progressBarsContainer}>
-            {currentUser?.stories.map((_, index) => (
-              <View key={index} style={styles.progressBarBackground}>
-                <View 
-                  style={[
-                    styles.progressBar,
-                    { 
-                      width: `${((index + 1) / currentUser.stories.length) * 100}%`,
-                      opacity: index <= currentStoryIndex ? 1 : 0.3
-                    }
-                  ]} 
-                />
-              </View>
-            ))}
-          </View>
+      {/* Story Modal - Only for non-home views */}
+      {from !== 'home' && (
+        <Modal
+          visible={storyModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={closeStory}
+        >
+          <View style={styles.modalContainer}>
+            {/* Progress Bars */}
+            <View style={styles.progressBarsContainer}>
+              {currentUser?.stories.map((_, index) => (
+                <View key={index} style={styles.progressBarBackground}>
+                  <View 
+                    style={[
+                      styles.progressBar,
+                      { 
+                        width: `${((index + 1) / currentUser.stories.length) * 100}%`,
+                        opacity: index <= currentStoryIndex ? 1 : 0.3
+                      }
+                    ]} 
+                  />
+                </View>
+              ))}
+            </View>
 
-          {/* Story Image */}
-          <Image 
-            source={currentStory} 
-            style={styles.storyImage}
-            contentFit="cover"
-          />
-
-          {/* Header with user info */}
-          <View style={styles.storyHeader}>
+            {/* Story Image */}
             <Image 
-              source={currentUser?.image} 
-              style={styles.storyUserImage}
+              source={{ uri: currentStory }} 
+              style={styles.storyImage}
               contentFit="cover"
             />
-            <Text style={styles.storyUserName}>{currentUser?.name}</Text>
-            <Text style={styles.storyTime}>{currentUser?.time}</Text>
+
+            {/* Header with user info */}
+            <View style={styles.storyHeader}>
+              <Image 
+                source={{ uri: currentUser?.image }} 
+                style={styles.storyUserImage}
+                contentFit="cover"
+              />
+              <Text style={styles.storyUserName}>{currentUser?.name}</Text>
+              <Text style={styles.storyTime}>{currentUser?.time}</Text>
+            </View>
+
+            {/* Navigation Buttons */}
+            <TouchableOpacity 
+              style={[styles.navButton, styles.leftButton]}
+              onPress={previousStory}
+            />
+            <TouchableOpacity 
+              style={[styles.navButton, styles.rightButton]}
+              onPress={nextStory}
+            />
+
+            {/* Close Button */}
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={closeStory}
+            >
+              <Text style={styles.closeButtonText}>×</Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Navigation Buttons */}
-          <TouchableOpacity 
-            style={[styles.navButton, styles.leftButton]}
-            onPress={previousStory}
-          />
-          <TouchableOpacity 
-            style={[styles.navButton, styles.rightButton]}
-            onPress={nextStory}
-          />
-
-          {/* Close Button */}
-          <TouchableOpacity 
-            style={styles.closeButton}
-            onPress={closeStory}
-          >
-            <Text style={styles.closeButtonText}>×</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </View>
   )
 }
@@ -277,7 +328,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 25,
     marginTop: 10,
-    gap: 18
+    gap: 18,
   },
   tab: {
     alignItems: 'center',
@@ -291,7 +342,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     fontWeight: '600',
     color: '#004CFF',
-    backgroundColor: '#E5EBFC'
+    backgroundColor: '#E5EBFC',
   },
   section: {
     marginVertical: 30,
@@ -316,6 +367,7 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     gap: 15,
   },
+  // User item styles (for recently viewed)
   userItem: {
     alignItems: 'center',
     marginRight: 15,
@@ -350,6 +402,80 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     textAlign: 'center',
+  },
+  // Product item styles (for home page)
+  productItem: {
+    width: 140,
+    marginRight: 15,
+    alignItems: 'flex-start',
+  },
+  productImageContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 8,
+    backgroundColor: '#f8f9fa',
+    position: 'relative',
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  discountText: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: '600',
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+    height: 40, // Fixed height for 2 lines
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  discountedPrice: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
+    marginRight: 8,
+  },
+  originalPrice: {
+    fontSize: 14,
+    color: '#999',
+    textDecorationLine: 'line-through',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rating: {
+    fontSize: 12,
+    color: '#FFD700',
+    marginRight: 4,
+  },
+  reviews: {
+    fontSize: 12,
+    color: '#999',
   },
   // Story Modal Styles
   modalContainer: {

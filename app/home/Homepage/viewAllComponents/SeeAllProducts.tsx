@@ -4,29 +4,34 @@ import {
   TouchableOpacity, 
   ScrollView, 
   StyleSheet, 
-
   TextInput,
   FlatList,
   Modal,
   Animated,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native'
 import React, { useState, useEffect, useRef } from 'react'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useLazyGetProductsByFilterQuery } from '@/app/redux/slices/jsonApiSlice'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
 const SeeAllProducts = () => {
   const router = useRouter()
+  const [trigger, { data: apiData, isLoading, isFetching, error }] = useLazyGetProductsByFilterQuery()
+  
   const [activeCategory, setActiveCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('popular')
   const [showFilterDrawer, setShowFilterDrawer] = useState(false)
   const [products, setProducts] = useState([])
-  const [filteredProducts, setFilteredProducts] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
   
   // Advanced filter states
   const [priceRange, setPriceRange] = useState([0, 500])
@@ -38,171 +43,181 @@ const SeeAllProducts = () => {
   
   const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current
 
-  // Demo product data with enhanced properties
-  const allProducts = [
-    {
-      id: 1,
-      name: 'Premium Cotton T-Shirt',
-      price: 45.99,
-      originalPrice: 65.99,
-      category: 'Clothing',
-      brand: 'FashionCo',
-      size: ['S', 'M', 'L', 'XL'],
-      color: ['White', 'Black', 'Navy'],
-      gender: 'Unisex',
-      image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.5,
-      reviews: 128,
-      isNew: true,
-      isTrending: true,
-      inStock: true,
-      fastDelivery: true
-    },
-    {
-      id: 2,
-      name: 'Noise Cancelling Headphones Pro',
-      price: 299.99,
-      originalPrice: 399.99,
-      category: 'Electronics',
-      brand: 'AudioTech',
-      size: ['One Size'],
-      color: ['Black', 'Silver'],
-      gender: 'Unisex',
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.8,
-      reviews: 256,
-      isNew: false,
-      isTrending: true,
-      inStock: true,
-      fastDelivery: true
-    },
-    {
-      id: 3,
-      name: 'Modern Minimalist Desk Lamp',
-      price: 89.99,
-      originalPrice: 119.99,
-      category: 'Home',
-      brand: 'HomeEssentials',
-      size: ['One Size'],
-      color: ['White', 'Black', 'Walnut'],
-      gender: 'Unisex',
-      image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.6,
-      reviews: 89,
-      isNew: true,
-      isTrending: false,
-      inStock: true,
-      fastDelivery: false
-    },
-    {
-      id: 4,
-      name: "Men's Performance Running Shoes",
-      price: 129.99,
-      originalPrice: 159.99,
-      category: 'Shoes',
-      brand: 'RunPro',
-      size: ['8', '9', '10', '11', '12'],
-      color: ['Black/Red', 'Blue/White', 'Gray'],
-      gender: 'Men',
-      image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.7,
-      reviews: 342,
-      isNew: false,
-      isTrending: true,
-      inStock: true,
-      fastDelivery: true
-    },
-    {
-      id: 5,
-      name: 'Smart Watch Series 6 Pro',
-      price: 349.99,
-      originalPrice: 449.99,
-      category: 'Electronics',
-      brand: 'TechWear',
-      size: ['42mm', '46mm'],
-      color: ['Black', 'Silver', 'Gold'],
-      gender: 'Unisex',
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.9,
-      reviews: 512,
-      isNew: true,
-      isTrending: true,
-      inStock: true,
-      fastDelivery: true
-    },
-    {
-      id: 6,
-      name: "Designer Leather Handbag",
-      price: 199.99,
-      originalPrice: 299.99,
-      category: 'Accessories',
-      brand: 'LuxStyle',
-      size: ['One Size'],
-      color: ['Brown', 'Black', 'Camel'],
-      gender: 'Women',
-      image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.4,
-      reviews: 167,
-      isNew: true,
-      isTrending: false,
-      inStock: true,
-      fastDelivery: false
-    },
-    {
-      id: 7,
-      name: 'Mechanical Gaming Keyboard RGB',
-      price: 149.99,
-      originalPrice: 199.99,
-      category: 'Electronics',
-      brand: 'GameMaster',
-      size: ['Full Size', 'Tenkeyless'],
-      color: ['Black', 'White'],
-      gender: 'Unisex',
-      image: 'https://images.unsplash.com/photo-1541140532154-b024d705b90a?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.5,
-      reviews: 234,
-      isNew: false,
-      isTrending: true,
-      inStock: false,
-      fastDelivery: true
-    },
-    {
-      id: 8,
-      name: 'Professional Yoga Mat',
-      price: 59.99,
-      originalPrice: 79.99,
-      category: 'Sports',
-      brand: 'FitLife',
-      size: ['Standard', 'Long'],
-      color: ['Purple', 'Blue', 'Green'],
-      gender: 'Unisex',
-      image: 'https://images.unsplash.com/photo-1601924582970-9238bcb495d9?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-      rating: 4.3,
-      reviews: 78,
-      isNew: true,
-      isTrending: false,
-      inStock: true,
-      fastDelivery: true
-    }
-  ]
-
   const categories = ['All', 'Clothing', 'Electronics', 'Home', 'Shoes', 'Accessories', 'Sports']
   const brands = ['FashionCo', 'AudioTech', 'HomeEssentials', 'RunPro', 'TechWear', 'LuxStyle', 'GameMaster', 'FitLife']
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '8', '9', '10', '11', '12', '42mm', '46mm', 'One Size', 'Standard', 'Long', 'Full Size', 'Tenkeyless']
   const colors = ['White', 'Black', 'Navy', 'Silver', 'Brown', 'Camel', 'Purple', 'Blue', 'Green', 'Red', 'Gray', 'Gold']
   
   const sortOptions = [
-    { label: 'Popular', value: 'popular', icon: 'flame' },
-    { label: 'Newest', value: 'newest', icon: 'time' },
-    { label: 'Price: Low to High', value: 'price-low', icon: 'arrow-up' },
-    { label: 'Price: High to Low', value: 'price-high', icon: 'arrow-down' },
-    { label: 'Rating', value: 'rating', icon: 'star' },
-    { label: 'Most Reviewed', value: 'reviews', icon: 'chatbubble' }
+    { label: 'Popular', value: 'popular', icon: 'flame', apiValue: { sortBy: 'createdAt', sortOrder: 'desc' } },
+    { label: 'Newest', value: 'newest', icon: 'time', apiValue: { sortBy: 'createdAt', sortOrder: 'desc' } },
+    { label: 'Price: Low to High', value: 'price-low', icon: 'arrow-up', apiValue: { sortBy: 'price', sortOrder: 'asc' } },
+    { label: 'Price: High to Low', value: 'price-high', icon: 'arrow-down', apiValue: { sortBy: 'price', sortOrder: 'desc' } },
+    { label: 'Rating', value: 'rating', icon: 'star', apiValue: { sortBy: 'rating', sortOrder: 'desc' } },
+    { label: 'Most Reviewed', value: 'reviews', icon: 'chatbubble', apiValue: { sortBy: 'reviews', sortOrder: 'desc' } }
   ]
 
+  // Map sortBy state to API parameters
+  const getSortParams = () => {
+    const option = sortOptions.find(opt => opt.value === sortBy)
+    return option ? option.apiValue : { sortBy: 'createdAt', sortOrder: 'desc' }
+  }
+
+  // Build API parameters based on current filters
+  const buildApiParams = () => {
+    const sortParams = getSortParams()
+    
+    const params = {
+      page: currentPage,
+      limit: 20,
+      sortBy: sortParams.sortBy,
+      sortOrder: sortParams.sortOrder,
+    }
+
+    // Add filters if they're not default/empty
+    if (activeCategory !== 'All') {
+      params.category = activeCategory
+    }
+
+    if (searchQuery) {
+      params.search = searchQuery
+    }
+
+    if (priceRange[0] > 0) {
+      params.minPrice = priceRange[0]
+    }
+
+    if (priceRange[1] < 500) {
+      params.maxPrice = priceRange[1]
+    }
+
+    if (selectedBrands.length > 0) {
+      // Handle multiple brands as array
+      selectedBrands.forEach(brand => {
+        if (!params.brand) {
+          params.brand = brand
+        } else if (typeof params.brand === 'string') {
+          params.brand = [params.brand, brand]
+        } else if (Array.isArray(params.brand)) {
+          params.brand.push(brand)
+        }
+      })
+    }
+
+    if (selectedSizes.length > 0) {
+      // Handle multiple sizes as array
+      selectedSizes.forEach(size => {
+        if (!params.size) {
+          params.size = size
+        } else if (typeof params.size === 'string') {
+          params.size = [params.size, size]
+        } else if (Array.isArray(params.size)) {
+          params.size.push(size)
+        }
+      })
+    }
+
+    if (selectedColors.length > 0) {
+      // Handle multiple colors as array
+      selectedColors.forEach(color => {
+        if (!params.color) {
+          params.color = color
+        } else if (typeof params.color === 'string') {
+          params.color = [params.color, color]
+        } else if (Array.isArray(params.color)) {
+          params.color.push(color)
+        }
+      })
+    }
+
+    if (ratingFilter > 0) {
+      params.rating = ratingFilter
+    }
+
+    if (availability === 'inStock') {
+      params.inStock = true
+    } else if (availability === 'fastDelivery') {
+      // Assuming you have a 'fastDelivery' label in your API
+      if (!params.labels) {
+        params.labels = 'fast_delivery'
+      } else if (typeof params.labels === 'string') {
+        params.labels = [params.labels, 'fast_delivery']
+      } else if (Array.isArray(params.labels)) {
+        params.labels.push('fast_delivery')
+      }
+    }
+
+    return params
+  }
+
+  // Fetch products when filters change
   useEffect(() => {
-    filterProducts()
-  }, [activeCategory, searchQuery, sortBy, priceRange, selectedBrands, selectedSizes, selectedColors, ratingFilter, availability])
+    const delayDebounceFn = setTimeout(() => {
+      const params = buildApiParams()
+      setCurrentPage(1) // Reset to first page when filters change
+      trigger(params)
+    }, 300) // Debounce search
+
+    return () => clearTimeout(delayDebounceFn)
+  }, [
+    activeCategory,
+    searchQuery,
+    sortBy,
+    priceRange,
+    selectedBrands,
+    selectedSizes,
+    selectedColors,
+    ratingFilter,
+    availability
+  ])
+
+  // Fetch more products when page changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      const params = buildApiParams()
+      trigger(params)
+    }
+  }, [currentPage])
+
+  // Update products when API data changes
+  useEffect(() => {
+    if (apiData) {
+      let newProducts = []
+      let total = 1
+      let current = 1
+      
+      // Handle different API response structures
+      if (apiData.data && Array.isArray(apiData.data)) {
+        // Structure: { data: [], meta: { totalPages, currentPage, total } }
+        newProducts = apiData.data
+        if (apiData.meta) {
+          total = apiData.meta.totalPages || 1
+          current = apiData.meta.currentPage || 1
+        }
+      } else if (apiData.products && Array.isArray(apiData.products)) {
+        // Structure: { products: [], totalPages, currentPage }
+        newProducts = apiData.products
+        total = apiData.totalPages || 1
+        current = apiData.currentPage || 1
+      } else if (Array.isArray(apiData)) {
+        // Structure: direct array
+        newProducts = apiData
+      }
+      
+      // Update pagination state
+      setTotalPages(total)
+      
+      // Update products list
+      if (current === 1) {
+        setProducts(newProducts)
+      } else {
+        setProducts(prev => [...prev, ...newProducts])
+      }
+      
+      // Check if there are more pages
+      setHasMore(current < total)
+    }
+  }, [apiData])
 
   useEffect(() => {
     if (showFilterDrawer) {
@@ -220,83 +235,10 @@ const SeeAllProducts = () => {
     }
   }, [showFilterDrawer])
 
-  const filterProducts = () => {
-    let filtered = [...allProducts]
-
-    // Filter by category
-    if (activeCategory !== 'All') {
-      filtered = filtered.filter(product => product.category === activeCategory)
+  const handleLoadMore = () => {
+    if (hasMore && !isFetching && currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1)
     }
-
-    // Filter by search query
-    if (searchQuery) {
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.brand.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-
-    // Filter by price range
-    filtered = filtered.filter(product => 
-      product.price >= priceRange[0] && product.price <= priceRange[1]
-    )
-
-    // Filter by brands
-    if (selectedBrands.length > 0) {
-      filtered = filtered.filter(product => selectedBrands.includes(product.brand))
-    }
-
-    // Filter by sizes
-    if (selectedSizes.length > 0) {
-      filtered = filtered.filter(product => 
-        product.size.some(size => selectedSizes.includes(size))
-      )
-    }
-
-    // Filter by colors
-    if (selectedColors.length > 0) {
-      filtered = filtered.filter(product => 
-        product.color.some(color => selectedColors.includes(color))
-      )
-    }
-
-    // Filter by rating
-    if (ratingFilter > 0) {
-      filtered = filtered.filter(product => product.rating >= ratingFilter)
-    }
-
-    // Filter by availability
-    if (availability === 'inStock') {
-      filtered = filtered.filter(product => product.inStock)
-    } else if (availability === 'fastDelivery') {
-      filtered = filtered.filter(product => product.fastDelivery)
-    }
-
-    // Sort products
-    switch (sortBy) {
-      case 'newest':
-        filtered = filtered.sort((a, b) => b.id - a.id)
-        break
-      case 'price-low':
-        filtered = filtered.sort((a, b) => a.price - b.price)
-        break
-      case 'price-high':
-        filtered = filtered.sort((a, b) => b.price - a.price)
-        break
-      case 'rating':
-        filtered = filtered.sort((a, b) => b.rating - a.rating)
-        break
-      case 'reviews':
-        filtered = filtered.sort((a, b) => b.reviews - a.reviews)
-        break
-      case 'popular':
-      default:
-        filtered = filtered.sort((a, b) => (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0) || b.reviews - a.reviews)
-        break
-    }
-
-    setFilteredProducts(filtered)
   }
 
   const toggleBrand = (brand) => {
@@ -330,6 +272,8 @@ const SeeAllProducts = () => {
     setSelectedColors([])
     setRatingFilter(0)
     setAvailability('all')
+    setCurrentPage(1)
+    setShowFilterDrawer(false)
   }
 
   const getActiveFilterCount = () => {
@@ -346,11 +290,11 @@ const SeeAllProducts = () => {
   const renderProductItem = ({ item }) => (
     <TouchableOpacity 
       style={styles.productCard}
-      onPress={() => router.push(`/product/${item.id}`)}
+      onPress={() => router.push(`/product/${item._id || item.id}`)}
     >
       <View style={styles.productImageContainer}>
         <Image 
-          source={item.image} 
+          source={item.image || item.images?.[0] || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60'} 
           style={styles.productImage}
           contentFit="cover"
         />
@@ -374,23 +318,23 @@ const SeeAllProducts = () => {
       </View>
       
       <View style={styles.productInfo}>
-        <Text style={styles.productBrand}>{item.brand}</Text>
-        <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+        <Text style={styles.productBrand}>{item.brand || 'Unknown Brand'}</Text>
+        <Text style={styles.productName} numberOfLines={2}>{item.name || 'Unnamed Product'}</Text>
         
         <View style={styles.ratingContainer}>
           <Ionicons name="star" size={14} color="#FFD700" />
-          <Text style={styles.ratingText}>{item.rating}</Text>
-          <Text style={styles.reviewsText}>({item.reviews})</Text>
+          <Text style={styles.ratingText}>{item.rating || 0}</Text>
+          <Text style={styles.reviewsText}>({item.reviews || 0})</Text>
         </View>
         
         <View style={styles.priceContainer}>
-          <Text style={styles.currentPrice}>${item.price}</Text>
-          {item.originalPrice > item.price && (
+          <Text style={styles.currentPrice}>${item.price || 0}</Text>
+          {item.originalPrice && item.originalPrice > item.price && (
             <Text style={styles.originalPrice}>${item.originalPrice}</Text>
           )}
         </View>
         
-        {item.originalPrice > item.price && (
+        {item.originalPrice && item.originalPrice > item.price && (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>
               {Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}% OFF
@@ -422,6 +366,7 @@ const SeeAllProducts = () => {
       <View style={styles.drawerOverlay}>
         <TouchableOpacity 
           style={styles.drawerBackdrop}
+          activeOpacity={1}
           onPress={() => setShowFilterDrawer(false)}
         />
         <Animated.View 
@@ -639,6 +584,37 @@ const SeeAllProducts = () => {
     return colorMap[color] || '#CCCCCC'
   }
 
+  // Error state
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
+          <Text style={styles.errorTitle}>Something went wrong</Text>
+          <Text style={styles.errorText}>Failed to load products. Please try again.</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => trigger(buildApiParams())}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // Loading state
+  if (isLoading && currentPage === 1) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#004CFF" />
+          <Text style={styles.loadingText}>Loading products...</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -747,28 +723,64 @@ const SeeAllProducts = () => {
         {/* Results Count */}
         <View style={styles.resultsContainer}>
           <Text style={styles.resultsText}>
-            {filteredProducts.length} products found
+            {products.length} products found
             {getActiveFilterCount() > 0 && ` • ${getActiveFilterCount()} filter(s) active`}
+            {isFetching && currentPage === 1 && ' • Loading...'}
           </Text>
         </View>
 
         {/* Products Grid */}
         <FlatList
-          data={filteredProducts}
+          data={products}
           renderItem={renderProductItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => (item._id || item.id).toString()}
           numColumns={2}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.productsGrid}
           columnWrapperStyle={styles.columnWrapper}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetching && currentPage > 1 ? (
+              <View style={styles.loadingMoreContainer}>
+                <ActivityIndicator size="small" color="#004CFF" />
+                <Text style={styles.loadingMoreText}>Loading more products...</Text>
+              </View>
+            ) : hasMore ? (
+              <View style={styles.loadMoreHint}>
+                <Text style={styles.loadMoreHintText}>Swipe up to load more</Text>
+              </View>
+            ) : products.length > 0 ? (
+              <View style={styles.endOfList}>
+                <Text style={styles.endOfListText}>No more products</Text>
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="search-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyStateTitle}>No products found</Text>
-              <Text style={styles.emptyStateText}>
-                Try adjusting your filters or search terms
-              </Text>
-            </View>
+            !isLoading && (
+              <View style={styles.emptyState}>
+                <Ionicons name="search-outline" size={64} color="#ccc" />
+                <Text style={styles.emptyStateTitle}>No products found</Text>
+                <Text style={styles.emptyStateText}>
+                  Try adjusting your filters or search terms
+                </Text>
+                <TouchableOpacity 
+                  style={styles.clearFiltersEmptyButton}
+                  onPress={clearAllFilters}
+                >
+                  <Text style={styles.clearFiltersEmptyButtonText}>Clear All Filters</Text>
+                </TouchableOpacity>
+              </View>
+            )
+          }
+          refreshControl={
+            <ScrollView
+              refreshing={isFetching && currentPage === 1}
+              onRefresh={() => {
+                setCurrentPage(1)
+                trigger(buildApiParams())
+              }}
+            />
           }
         />
 
@@ -779,9 +791,6 @@ const SeeAllProducts = () => {
   )
 }
 
-// ... (Styles remain the same as in the previous response, but enhanced for premium look)
-// Note: Due to character limits, I'll include the most important style additions:
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -790,6 +799,75 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#004CFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  loadingMoreContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadingMoreText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  loadMoreHint: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  loadMoreHintText: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  endOfList: {
+    paddingVertical: 24,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    marginTop: 16,
+  },
+  endOfListText: {
+    fontSize: 14,
+    color: '#999',
   },
   header: {
     flexDirection: 'row',
@@ -1105,7 +1183,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  // Filter Drawer Styles
+  clearFiltersEmptyButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#f0f7ff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#004CFF',
+  },
+  clearFiltersEmptyButtonText: {
+    color: '#004CFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   drawerOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -1326,11 +1417,9 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   applyFiltersButton: {
-    // flex: 2,
+    flex: 2,
     flexDirection: 'row',
-    // padding: 3,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    padding: 14,
     backgroundColor: '#ed422bff',
     borderRadius: 12,
     alignItems: 'center',

@@ -1,7 +1,8 @@
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 
 const FlashSale = () => {
   const [timeLeft, setTimeLeft] = useState({
@@ -11,41 +12,10 @@ const FlashSale = () => {
   })
 
   const [selectedProducts, setSelectedProducts] = useState([])
-
-  const router = useRouter()
-
-  // Countdown timer
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prevTime => {
-        const { hours, minutes, seconds } = prevTime
-        
-        if (seconds > 0) {
-          return { ...prevTime, seconds: seconds - 1 }
-        } else if (minutes > 0) {
-          return { ...prevTime, minutes: minutes - 1, seconds: 59 }
-        } else if (hours > 0) {
-          return { hours: hours - 1, minutes: 59, seconds: 59 }
-        } else {
-          clearInterval(timer)
-          return { hours: 0, minutes: 0, seconds: 0 }
-        }
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
-
-  const handleProductSelect = (productId) => {
-    setSelectedProducts(prev => {
-      if (prev.includes(productId)) {
-        return prev.filter(id => id !== productId)
-      } else {
-        return [...prev, productId]
-      }
-    })
-  }
-
+  const [showArrow, setShowArrow] = useState(false)
+  const [contentOffset, setContentOffset] = useState(0)
+  const flatListRef = useRef(null)
+  const containerWidth = 180 + 19 // product width + margin
   const flashSaleProducts = [
     {
       id: 1,
@@ -121,11 +91,64 @@ const FlashSale = () => {
     }
   ]
 
+  const router = useRouter()
+
+  // Countdown timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prevTime => {
+        const { hours, minutes, seconds } = prevTime
+        
+        if (seconds > 0) {
+          return { ...prevTime, seconds: seconds - 1 }
+        } else if (minutes > 0) {
+          return { ...prevTime, minutes: minutes - 1, seconds: 59 }
+        } else if (hours > 0) {
+          return { hours: hours - 1, minutes: 59, seconds: 59 }
+        } else {
+          clearInterval(timer)
+          return { hours: 0, minutes: 0, seconds: 0 }
+        }
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
+
+  const handleProductSelect = (productId) => {
+    setSelectedProducts(prev => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId)
+      } else {
+        return [...prev, productId]
+      }
+    })
+  }
+
+  const handleScroll = (event) => {
+    const offsetX = event.nativeEvent.contentOffset.x
+    const contentWidth = flashSaleProducts.length * containerWidth
+    const screenWidth = event.nativeEvent.layoutMeasurement.width
+    const totalScrollableWidth = contentWidth - screenWidth
+    
+    setContentOffset(offsetX)
+    
+    // Show arrow when user has scrolled near the end
+    if (offsetX >= totalScrollableWidth - 100) {
+      setShowArrow(true)
+    } else {
+      setShowArrow(false)
+    }
+  }
+
+  const handleArrowPress = () => {
+    // Navigate to flash sale details page
+    router.push('/home/Homepage/_routeCompo/flashSellsDetails')
+  }
+
   const renderProductItem = ({ item }) => {
     return (
       <View style={styles.productCard}>
-      
-        
         {/* Top Product - Selectable separately */}
         <TouchableOpacity 
           style={[
@@ -189,10 +212,9 @@ const FlashSale = () => {
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <TouchableOpacity onPress={()=> router.push('/home/Homepage/_routeCompo/flashSellsDetails')}>
-            <Text  style={styles.title}>Flash Sale</Text>
+            <Text style={styles.title}>Flash Sale</Text>
           </TouchableOpacity>
           <Text style={styles.subtitle}>Limited time offers</Text>
- 
         </View>
         
         {/* Countdown Timer */}
@@ -217,19 +239,45 @@ const FlashSale = () => {
         </View>
       </View>
 
-      {/* Products Scroll */}
-      <FlatList
-        data={flashSaleProducts}
-        renderItem={renderProductItem}
-        keyExtractor={(item) => item.id.toString()}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.flatListContent}
-      />
-
-      <TouchableOpacity style={styles.viewAllButton} onPress={()=> router.push('/home/Homepage/_routeCompo/flashSellsDetails')}>
-        <Text style={styles.viewAllText}>View All</Text>
-      </TouchableOpacity>
+      {/* Products Scroll with Arrow Overlay */}
+      <View style={styles.scrollContainer}>
+        <FlatList
+          ref={flatListRef}
+          data={flashSaleProducts}
+          renderItem={renderProductItem}
+          keyExtractor={(item) => item.id.toString()}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.flatListContent}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          onMomentumScrollEnd={(event) => {
+            const offsetX = event.nativeEvent.contentOffset.x
+            const contentWidth = flashSaleProducts.length * containerWidth
+            const screenWidth = event.nativeEvent.layoutMeasurement.width
+            const totalScrollableWidth = contentWidth - screenWidth
+            
+            // Show arrow when scroll reaches end
+            if (offsetX >= totalScrollableWidth - 10) {
+              setShowArrow(true)
+            }
+          }}
+        />
+        
+        {/* Arrow Overlay */}
+        {showArrow && (
+          <TouchableOpacity 
+            style={styles.arrowOverlay}
+            onPress={handleArrowPress}
+            activeOpacity={0.8}
+          >
+            <View style={styles.arrowContainer}>
+              <Ionicons name="arrow-forward-circle" size={44} color="#FF4444" />
+              <Text style={styles.arrowText}>View All</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   )
 }
@@ -241,28 +289,36 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     paddingHorizontal: 11,
   },
-viewAllButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  alignSelf: 'center', // centers button horizontally
-  backgroundColor: '#f56363',
-  paddingVertical: 10,
-  paddingHorizontal: 20, // controls width
-  borderRadius: 30,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.15,
-  shadowRadius: 3.5,
-  elevation: 3,
-},
-viewAllText: {
-  color: '#fff',
-  fontSize: 15,
-  fontWeight: '600',
-  letterSpacing: 0.5,
-},
-
+  scrollContainer: {
+    position: 'relative',
+  },
+  arrowOverlay: {
+    position: 'absolute',
+    right: 10,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  arrowContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#FF4444',
+    fontWeight: '600',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -325,9 +381,7 @@ viewAllText: {
     marginHorizontal: 4,
   },
   flatListContent: {
-    paddingRight: 1,
-    gap: -1,
-    // paddingLeft:20
+    paddingRight: 100, // Extra padding for arrow overlay
   },
   productCard: {
     width: 180,
@@ -335,7 +389,6 @@ viewAllText: {
     borderRadius: 12,
     padding: 10,
     marginRight: 19,
-   
   },
   cardTitle: {
     fontSize: 14,

@@ -5,96 +5,89 @@ import { useRouter } from 'expo-router'
 
 const { width: screenWidth } = Dimensions.get('window')
 
-const CommonScroller = ({ title }) => {
+const CommonScroller = ({ title, data }) => {
     const router = useRouter();
-    const arrayofProduct = [
-        {
-            id: 1,
-            name: 'Nike Air Max',
-            price: '$120',
-            image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-            rating: 4.5,
-            discount: '20% OFF'
-        },
-        {
-            id: 2,
-            name: 'Adidas Ultraboost',
-            price: '$180',
-            originalPrice: '$200',
-            image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-            rating: 4.8,
-            isNew: true
-        },
-        {
-            id: 3,
-            name: 'Puma RS-X',
-            price: '$90',
-            image: 'https://images.unsplash.com/photo-1605348532760-6753d2c43329?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-            rating: 4.2
-        },
-        {
-            id: 4,
-            name: 'New Balance 574',
-            price: '$85',
-            originalPrice: '$100',
-            image: 'https://images.unsplash.com/photo-1549289524-06cf8837ace5?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-            rating: 4.3,
-            discount: '15% OFF'
-        },
-        {
-            id: 5,
-            name: 'Reebok Classic',
-            price: '$75',
-            image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-            rating: 4.0,
-            isNew: true
-        },
-        {
-            id: 6,
-            name: 'Converse Chuck',
-            price: '$65',
-            image: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60',
-            rating: 4.6
-        }
-    ]
 
-    const renderProductItem = ({ item }) => (
-        <TouchableOpacity style={styles.productCard}>
-            <View style={styles.imageContainer}>
-                <Image 
-                    source={item.image} 
-                    style={styles.productImage}
-                    contentFit="cover"
-                />
-                {/* Badges */}
-                {item.discount && (
-                    <View style={[styles.badge, styles.discountBadge]}>
-                        <Text style={styles.badgeText}>{item.discount}</Text>
+    const renderProductItem = ({ item }) => {
+        // Check if item has discount
+        const hasDiscount = item.discountPrice && item.price > item.discountPrice;
+        const discountPercentage = hasDiscount 
+            ? Math.round(((item.price - item.discountPrice) / item.price) * 100)
+            : 0;
+
+        // Check labels for badges
+        const isNewItem = item.labels?.includes('new_item');
+        const isTopProduct = item.labels?.includes('top_product');
+        const isFlashDeal = item.labels?.includes('flash_deal');
+        const isJustForYou = item.labels?.includes('just_for_you');
+
+        return (
+            <TouchableOpacity 
+                style={styles.productCard}
+                onPress={() => {
+                    // Navigate to product detail page
+                    router.push(`/product/${item._id}`);
+                }}
+            >
+                <View style={styles.imageContainer}>
+                    <Image 
+                        source={{ uri: item.images[0] }} 
+                        style={styles.productImage}
+                        contentFit="cover"
+                    />
+                    
+                    {/* Badges */}
+                    <View style={styles.badgesContainer}>
+                        {hasDiscount && (
+                            <View style={[styles.badge, styles.discountBadge]}>
+                                <Text style={styles.badgeText}>{discountPercentage}% OFF</Text>
+                            </View>
+                        )}
+                        {isNewItem && (
+                            <View style={[styles.badge, styles.newBadge]}>
+                                <Text style={styles.badgeText}>NEW</Text>
+                            </View>
+                        )}
+                        {isFlashDeal && (
+                            <View style={[styles.badge, styles.flashBadge]}>
+                                <Text style={styles.badgeText}>FLASH</Text>
+                            </View>
+                        )}
                     </View>
-                )}
-                {item.isNew && (
-                    <View style={[styles.badge, styles.newBadge]}>
-                        <Text style={styles.badgeText}>NEW</Text>
-                    </View>
-                )}
-            </View>
-            
-            <View style={styles.productInfo}>
-                <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-                
-                {/* <View style={styles.ratingContainer}>
-                    <Text style={styles.rating}>⭐ {item.rating}</Text>
-                </View> */}
-                
-                <View style={styles.priceContainer}>
-                    <Text style={styles.currentPrice}>{item.price}</Text>
-                    {item.originalPrice && (
-                        <Text style={styles.originalPrice}>{item.originalPrice}</Text>
-                    )}
                 </View>
-            </View>
-        </TouchableOpacity>
-    )
+                
+                <View style={styles.productInfo}>
+                    <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                    
+                    {/* Brand */}
+                    <Text style={styles.brandText} numberOfLines={1}>{item.brand}</Text>
+                    
+                    {/* Rating */}
+                    <View style={styles.ratingContainer}>
+                        <Text style={styles.rating}>⭐ {item.rating?.toFixed(1) || '4.0'}</Text>
+                        <Text style={styles.reviews}>({item.reviews || 0})</Text>
+                    </View>
+                    
+                    {/* Price */}
+                    <View style={styles.priceContainer}>
+                        {hasDiscount ? (
+                            <>
+                                <Text style={styles.currentPrice}>${item.discountPrice.toFixed(2)}</Text>
+                                <Text style={styles.originalPrice}>${item.price.toFixed(2)}</Text>
+                            </>
+                        ) : (
+                            <Text style={styles.currentPrice}>${item.price.toFixed(2)}</Text>
+                        )}
+                    </View>
+                    
+
+                </View>
+            </TouchableOpacity>
+        )
+    }
+
+    // Fallback to empty array if data is not provided
+    const productData = data || [];
 
     return (
         <View style={styles.container}>
@@ -102,19 +95,25 @@ const CommonScroller = ({ title }) => {
             <View style={styles.header}>
                 <Text style={styles.title}>{title}</Text>
                 <TouchableOpacity onPress={()=> router.push('/home/Homepage/viewAllComponents/SeeAllProducts')}>
-                    <Text style={styles.seeAllText}>See as All</Text>
+                    <Text style={styles.seeAllText}>See All</Text>
                 </TouchableOpacity>
             </View>
             
             {/* Products Scroll */}
-            <FlatList
-                data={arrayofProduct}
-                renderItem={renderProductItem}
-                keyExtractor={(item) => item.id.toString()}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.flatListContent}
-            />
+            {productData.length > 0 ? (
+                <FlatList
+                    data={productData}
+                    renderItem={renderProductItem}
+                    keyExtractor={(item) => item._id}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.flatListContent}
+                />
+            ) : (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No products available</Text>
+                </View>
+            )}
         </View>
     )
 }
@@ -146,14 +145,22 @@ const styles = StyleSheet.create({
         paddingRight: 16,
         gap: 12,
     },
+    emptyContainer: {
+        height: 200,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#999',
+    },
     productCard: {
         width: 160,
         backgroundColor: 'white',
-        borderRadius: 12,  
+        borderRadius: 12,
         padding: 8,
         marginRight: 12,
-    
-
+       
     },
     imageContainer: {
         position: 'relative',
@@ -161,22 +168,31 @@ const styles = StyleSheet.create({
     },
     productImage: {
         width: '100%',
-        height: 120,
-        borderRadius: 4,
+        height: 140,
+        borderRadius: 8,
+        backgroundColor: '#f8f9fa',
     },
-    badge: {
+    badgesContainer: {
         position: 'absolute',
         top: 8,
         left: 8,
+        flexDirection: 'column',
+        gap: 4,
+    },
+    badge: {
         paddingHorizontal: 6,
-        paddingVertical: 2,
+        paddingVertical: 3,
         borderRadius: 4,
+        alignSelf: 'flex-start',
     },
     discountBadge: {
         backgroundColor: '#FF6B6B',
     },
     newBadge: {
         backgroundColor: '#4CAF50',
+    },
+    flashBadge: {
+        backgroundColor: '#FF9800',
     },
     badgeText: {
         fontSize: 10,
@@ -190,20 +206,34 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: '#000',
-        marginBottom: 6,
+        marginBottom: 4,
         lineHeight: 18,
+        height: 36, // Fixed height for 2 lines
+    },
+    brandText: {
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 6,
     },
     ratingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         marginBottom: 8,
     },
     rating: {
         fontSize: 12,
-        color: '#666',
+        color: '#FFD700',
+        fontWeight: '600',
+    },
+    reviews: {
+        fontSize: 11,
+        color: '#999',
+        marginLeft: 2,
     },
     priceContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        marginBottom: 8,
     },
     currentPrice: {
         fontSize: 16,
@@ -214,5 +244,22 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#999',
         textDecorationLine: 'line-through',
+        marginLeft: 6,
+    },
+    labelsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 4,
+    },
+    labelChip: {
+        backgroundColor: '#f0f0f0',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    labelText: {
+        fontSize: 10,
+        color: '#666',
+        fontWeight: '500',
     },
 })
