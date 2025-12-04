@@ -3,102 +3,117 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export const jsonApi = createApi({
   reducerPath: 'jsonApi',
-  baseQuery: fetchBaseQuery({ baseUrl: 'http://192.168.1.200:8000' }),
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: 'https://intermediate-asking-sim-penguin.trycloudflare.com' 
+  }),
   endpoints: (builder) => ({
     getAllProducts: builder.query({
-      query: () => 'posts',
+      query: () => '/products',
     }),
 
-// In your Redux slice (jsonApiSlice.js or similar)
-getProductsByFilter: builder.query({
-  query: (params = {}) => {
-    const {
-      category,
-      brand,
-      minPrice,
-      maxPrice,
-      labels,
-      rating,
-      color,
-      size,
-      inStock,
-      search,
-      page = 1,
-      limit = 20,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
-    } = params;
-
-    // Build query string
-    const queryParams = new URLSearchParams();
-    
-    if (category) queryParams.append('category', category);
-    if (brand) queryParams.append('brand', brand);
-    if (minPrice) queryParams.append('minPrice', minPrice);
-    if (maxPrice) queryParams.append('maxPrice', maxPrice);
-    if (rating) queryParams.append('rating', rating);
-    if (color) queryParams.append('color', color);
-    if (size) queryParams.append('size', size);
-    if (search) queryParams.append('search', search);
-    
-    // Handle boolean and array parameters
-    if (inStock !== undefined) queryParams.append('inStock', inStock);
-    if (labels) {
-      if (Array.isArray(labels)) {
-        labels.forEach(label => queryParams.append('labels', label));
-      } else {
-        queryParams.append('labels', labels);
-      }
-    }
-    
-    // Pagination and sorting
-    queryParams.append('page', page);
-    queryParams.append('limit', limit);
-    queryParams.append('sortBy', sortBy);
-    queryParams.append('sortOrder', sortOrder);
-
-    const queryString = queryParams.toString();
-    return `/products/filter${queryString ? `?${queryString}` : ''}`;
-  },
-  providesTags: (result, error, params) =>
-    result
-      ? [
-          ...result.map(({ _id }) => ({ type: 'Products', id: _id })),
-          { type: 'Products', id: 'FILTERED_LIST' },
-        ]
-      : [{ type: 'Products', id: 'FILTERED_LIST' }],
-}),
+    getProductsByFilter: builder.query({
+      query: (filters = {}) => {
+        // Build query parameters
+        const params = new URLSearchParams();
+        
+        // Helper to handle array values
+        const addParam = (key, value) => {
+          if (value === undefined || value === null) return;
+          
+          if (Array.isArray(value)) {
+            // For arrays, append each value separately
+            value.forEach(item => {
+              if (item !== undefined && item !== null && item !== '') {
+                params.append(key, item);
+              }
+            });
+          } else if (value !== '' && value !== false) {
+            // For single values (including boolean true)
+            params.append(key, value);
+          }
+        };
+        
+        // Map filter object to query parameters
+        const {
+          category,
+          brand,
+          minPrice,
+          maxPrice,
+          labels,
+          rating,
+          color,
+          size,
+          inStock,
+          search,
+          variations,
+          variationSku,
+          page,
+          limit,
+          sortBy,
+          // Any other filter fields...
+        } = filters;
+        
+        // Add each filter parameter
+        addParam('category', category);
+        addParam('brand', brand);
+        addParam('minPrice', minPrice);
+        addParam('maxPrice', maxPrice);
+        addParam('labels', labels);
+        addParam('rating', rating);
+        addParam('color', color);
+        addParam('size', size);
+        addParam('inStock', inStock);
+        addParam('search', search);
+        addParam('variations', variations);
+        addParam('variationSku', variationSku);
+        addParam('page', page);
+        addParam('limit', limit);
+        addParam('sortBy', sortBy);
+        
+        // Construct the query string
+        const queryString = params.toString();
+        return `/products/filter${queryString ? `?${queryString}` : ''}`;
+      },
+    }),
 
     getPostById: builder.query({
       query: (id) => `posts/${id}`,
     }),
+    
     getCategories: builder.query({
       query: () => '/categories'
     }),
+    
     getProductsByTypes: builder.query({
-      query:(type) => `/products/${type}`
+      query: (type) => `/products/${type}`
     }),
 
     signUp: builder.mutation({
-      query:(data) => ({
+      query: (data) => ({
         url: '/user/sign-up',
-        method:"POST",
-        body:data
+        method: 'POST',
+        body: data
       })
     }),
 
     signIn: builder.mutation({
-      query:(data) => ({
-        url:'/user/sign-in',
-        method:'POST',
-        body:data
+      query: (data) => ({
+        url: '/user/sign-in',
+        method: 'POST',
+        body: data
       })
     })
 
   }),
 });
 
-export const { useGetAllProductsQuery, useGetPostByIdQuery,useGetCategoriesQuery,
-  useGetProductsByTypesQuery,useSignUpMutation,useSignInMutation,useGetProductsByFiltterQuery,
+export const { 
+  useGetAllProductsQuery, 
+  useGetPostByIdQuery,
+  useGetCategoriesQuery,
+  useGetProductsByTypesQuery,
+  useSignUpMutation,
+  useSignInMutation,
+  useGetProductsByFilterQuery,
   useLazyGetProductsByFilterQuery
- } = jsonApi;
+} = jsonApi;
