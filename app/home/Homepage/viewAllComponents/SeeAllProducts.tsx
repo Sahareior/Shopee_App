@@ -107,7 +107,6 @@ const ProductCard = React.memo(({ item, onPress }) => {
     </TouchableOpacity>
   )
 }, (prevProps, nextProps) => {
-  // shallow compare id and a few important stable props to avoid unnecessary re-renders
   return prevProps.item._id === nextProps.item._id &&
          prevProps.item.price === nextProps.item.price &&
          prevProps.item.discountPrice === nextProps.item.discountPrice &&
@@ -141,7 +140,8 @@ const FilterDrawer = React.memo(({
   clearAllFilters,
   handleApplyFilters,
   getActiveFilterCount,
-  getColorValue
+  getColorValue,
+  isLoadingMetadata
 }) => {
   const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current
 
@@ -160,6 +160,14 @@ const FilterDrawer = React.memo(({
       }).start()
     }
   }, [visible, slideAnim])
+
+  // Loading indicator for filter sections
+  const FilterSectionLoader = () => (
+    <View style={styles.loadingFilterSection}>
+      <ActivityIndicator size="small" color="#004CFF" />
+      <Text style={styles.loadingFilterText}>Loading options...</Text>
+    </View>
+  );
 
   return (
     <Modal
@@ -197,7 +205,6 @@ const FilterDrawer = React.memo(({
                 <Text style={styles.priceText}>${priceRange[0]} - ${priceRange[1]}</Text>
               </View>
 
-              {/* Replace custom slider with @react-native-community/slider */}
               <View style={styles.sliderContainer}>
                 <Slider
                   style={styles.slider}
@@ -206,113 +213,101 @@ const FilterDrawer = React.memo(({
                   minimumTrackTintColor="#004CFF"
                   maximumTrackTintColor="#e9ecef"
                   thumbTintColor="#004CFF"
-                  value={priceRange[1]} // For single thumb slider
+                  value={priceRange[1]}
                   onValueChange={(value) => {
-                    // For dual-thumb functionality, you'll need to handle both values
-                    // This is a simplified single thumb approach
                     handlePriceChange([priceRange[0], value])
                   }}
                   step={10}
                 />
-                
- 
               </View>
-              
-              {/* Remove the old price inputs container */}
-              {/* 
-              <View style={styles.priceInputsContainer}>
-                <View style={styles.priceInputWrapper}>
-                  <Text style={styles.priceInputLabel}>Min:</Text>
-                  <TextInput
-                    style={styles.priceInput}
-                    value={String(priceRange[0])}
-                    onChangeText={handleLowPriceChange}
-                    keyboardType="numeric"
-                  />
-                </View>
-                <Text style={styles.priceSeparator}>-</Text>
-                <View style={styles.priceInputWrapper}>
-                  <Text style={styles.priceInputLabel}>Max:</Text>
-                  <TextInput
-                    style={styles.priceInput}
-                    value={String(priceRange[1])}
-                    onChangeText={handleHighPriceChange}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-              */}
             </View>
 
-            {/* Rest of the filter sections remain the same */}
             {/* Brands */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Brands</Text>
-              <View style={styles.chipContainer}>
-                {brands.map(brand => (
-                  <TouchableOpacity
-                    key={brand}
-                    style={[
-                      styles.chip,
-                      selectedBrands.includes(brand) && styles.chipSelected
-                    ]}
-                    onPress={() => toggleBrand(brand)}
-                  >
-                    <Text style={[
-                      styles.chipText,
-                      selectedBrands.includes(brand) && styles.chipTextSelected
-                    ]}>
-                      {brand}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {isLoadingMetadata ? (
+                <FilterSectionLoader />
+              ) : brands.length === 0 ? (
+                <Text style={styles.noOptionsText}>No brands available</Text>
+              ) : (
+                <View style={styles.chipContainer}>
+                  {brands.map(brand => (
+                    <TouchableOpacity
+                      key={brand}
+                      style={[
+                        styles.chip,
+                        selectedBrands.includes(brand) && styles.chipSelected
+                      ]}
+                      onPress={() => toggleBrand(brand)}
+                    >
+                      <Text style={[
+                        styles.chipText,
+                        selectedBrands.includes(brand) && styles.chipTextSelected
+                      ]}>
+                        {brand}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             {/* Sizes */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Sizes</Text>
-              <View style={styles.chipContainer}>
-                {sizes.map(size => (
-                  <TouchableOpacity
-                    key={size}
-                    style={[
-                      styles.chip,
-                      selectedSizes.includes(size) && styles.chipSelected
-                    ]}
-                    onPress={() => toggleSize(size)}
-                  >
-                    <Text style={[
-                      styles.chipText,
-                      selectedSizes.includes(size) && styles.chipTextSelected
-                    ]}>
-                      {size}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {isLoadingMetadata ? (
+                <FilterSectionLoader />
+              ) : sizes.length === 0 ? (
+                <Text style={styles.noOptionsText}>No sizes available</Text>
+              ) : (
+                <View style={styles.chipContainer}>
+                  {sizes.map(size => (
+                    <TouchableOpacity
+                      key={size}
+                      style={[
+                        styles.chip,
+                        selectedSizes.includes(size) && styles.chipSelected
+                      ]}
+                      onPress={() => toggleSize(size)}
+                    >
+                      <Text style={[
+                        styles.chipText,
+                        selectedSizes.includes(size) && styles.chipTextSelected
+                      ]}>
+                        {size}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             {/* Colors */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Colors</Text>
-              <View style={styles.colorContainer}>
-                {colors.map(color => (
-                  <TouchableOpacity
-                    key={color}
-                    style={[
-                      styles.colorChip,
-                      selectedColors.includes(color) && styles.colorChipSelected,
-                      { backgroundColor: getColorValue(color) }
-                    ]}
-                    onPress={() => toggleColor(color)}
-                  >
-                    {selectedColors.includes(color) && (
-                      <Ionicons name="checkmark" size={16} color="#fff" />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {isLoadingMetadata ? (
+                <FilterSectionLoader />
+              ) : colors.length === 0 ? (
+                <Text style={styles.noOptionsText}>No colors available</Text>
+              ) : (
+                <View style={styles.colorContainer}>
+                  {colors.map(color => (
+                    <TouchableOpacity
+                      key={color}
+                      style={[
+                        styles.colorChip,
+                        selectedColors.includes(color) && styles.colorChipSelected,
+                        { backgroundColor: getColorValue(color) }
+                      ]}
+                      onPress={() => toggleColor(color)}
+                    >
+                      {selectedColors.includes(color) && (
+                        <Ionicons name="checkmark" size={16} color="#fff" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             {/* Rating */}
@@ -404,7 +399,7 @@ const SeeAllProducts = () => {
   const router = useRouter()
   const {data: allCategories} = useGetCategoriesQuery()
   const {data: allPro} = useGetAllProductsQuery()
-  const [trigger, { data: filteredProductsFromApi, isLoading, isFetching }] = useLazyGetProductsByFilterQuery();
+  const [trigger, { data: filterResponse, isLoading, isFetching }] = useLazyGetProductsByFilterQuery();
   
   const [activeCategory, setActiveCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
@@ -412,6 +407,11 @@ const SeeAllProducts = () => {
   const [showFilterDrawer, setShowFilterDrawer] = useState(false)
   const [products, setProducts] = useState([])
   const [filteredProducts, setFilteredProducts] = useState([])
+  const [metadata, setMetadata] = useState({
+    brands: [],
+    sizes: [],
+    colors: []
+  })
   
   // Advanced filter states
   const [priceRange, setPriceRange] = useState([0, 2500])
@@ -428,15 +428,10 @@ const SeeAllProducts = () => {
     if (allPro && allPro.length > 0) {
       setProducts(allPro)
       setFilteredProducts(allPro)
-    }
-  }, [allPro])
-
-  // Extract unique brands, sizes, and colors only when allPro changes
-  const { brands, sizes, colors } = useMemo(() => {
-    const b = new Set()
-    const s = new Set()
-    const c = new Set()
-    if (Array.isArray(allPro)) {
+      // Initialize metadata from all products
+      const b = new Set()
+      const s = new Set()
+      const c = new Set()
       allPro.forEach(product => {
         if (product.brand) b.add(product.brand)
         if (product.variations && product.variations.length > 0) {
@@ -446,13 +441,50 @@ const SeeAllProducts = () => {
           })
         }
       })
-    }
-    return {
-      brands: Array.from(b),
-      sizes: Array.from(s),
-      colors: Array.from(c)
+      setMetadata({
+        brands: Array.from(b).sort(),
+        sizes: Array.from(s).sort(),
+        colors: Array.from(c).sort()
+      })
     }
   }, [allPro])
+
+  // Update metadata when filter response changes
+  useEffect(() => {
+    if (filterResponse) {
+      // If response has metadata field (from modified API)
+      if (filterResponse.metadata) {
+        setMetadata({
+          brands: filterResponse.metadata.brands || [],
+          sizes: filterResponse.metadata.sizes || [],
+          colors: filterResponse.metadata.colors || []
+        })
+        setFilteredProducts(filterResponse.products || [])
+      } else {
+        // If response is just the products array (from original API)
+        setFilteredProducts(filterResponse)
+        
+        // Extract metadata from filtered products
+        const b = new Set()
+        const s = new Set()
+        const c = new Set()
+        filterResponse.forEach(product => {
+          if (product.brand) b.add(product.brand)
+          if (product.variations && product.variations.length > 0) {
+            product.variations.forEach(variation => {
+              if (variation.size) s.add(variation.size)
+              if (variation.color) c.add(variation.color)
+            })
+          }
+        })
+        setMetadata({
+          brands: Array.from(b).sort(),
+          sizes: Array.from(s).sort(),
+          colors: Array.from(c).sort()
+        })
+      }
+    }
+  }, [filterResponse])
 
   const sortOptions = [
     { label: 'All', value: 'All', icon: 'flame' },
@@ -467,7 +499,7 @@ const SeeAllProducts = () => {
   const buildApiFilters = useCallback(() => {
     const filters = {};
     
-    // Category filter - we keep activeCategory as the category name for simplicity
+    // Category filter
     if (activeCategory !== 'All') {
       const selectedCategory = allCategories?.find(cat => cat.name === activeCategory);
       if (selectedCategory) {
@@ -511,11 +543,11 @@ const SeeAllProducts = () => {
       filters.inStock = true;
     }
     
-    // Sorting - handle popular differently
+    // Sorting
     if (sortBy === 'newest') {
       filters.sortBy = 'createdAt:desc';
     } else if (sortBy === 'popular') {
-      // leave default (backend or local logic can handle)
+      // leave default
     } else if (sortBy !== 'popular') {
       filters.sortBy = sortBy;
     }
@@ -537,11 +569,12 @@ const SeeAllProducts = () => {
 
     console.log('Applying API filters:', filters);
     
-    
     try {
       const result = await trigger(filters).unwrap();
-      if (result) {
-        setFilteredProducts(result);
+      // Metadata update handled in useEffect above
+      if (result && !result.metadata) {
+        // If API doesn't return metadata, we'll extract it in useEffect
+        console.log('API response received, extracting metadata...');
       }
     } catch (error) {
       console.error('Filter error:', error);
@@ -690,10 +723,6 @@ const SeeAllProducts = () => {
     setPriceRange([priceRange[0], numValue]);
   }, [priceRange]);
 
-  useEffect(() => {
-    // Keep drawer animation in FilterDrawer component rather than here
-  }, [showFilterDrawer])
-
   const toggleBrand = useCallback((brand) => {
     setSelectedBrands(prev =>
       prev.includes(brand)
@@ -772,7 +801,6 @@ const SeeAllProducts = () => {
     return colorMap[color] || '#CCCCCC'
   }, [])
 
-  // renderItem memoized and ProductCard is React.memo
   const renderProductItem = useCallback(({ item }) => (
     <ProductCard 
       item={item} 
@@ -780,7 +808,6 @@ const SeeAllProducts = () => {
     />
   ), [router])
 
-  // Fix category toggling to use category.name consistently
   const onCategoryPress = useCallback((categoryName) => {
     setActiveCategory(categoryName)
   }, [])
@@ -913,6 +940,11 @@ const SeeAllProducts = () => {
             {(isLoading || isFetching) ? 'Loading products...' : `${filteredProducts.length} products found`}
             {getActiveFilterCount() > 0 && !isLoading && ` • ${getActiveFilterCount()} filter(s) active`}
           </Text>
+          {filterResponse?.metadata && (
+            <Text style={styles.metadataInfo}>
+              Found {filterResponse.metadata.brands?.length || 0} brands, {filterResponse.metadata.sizes?.length || 0} sizes, {filterResponse.metadata.colors?.length || 0} colors
+            </Text>
+          )}
         </View>
 
         {/* Products Grid */}
@@ -939,7 +971,6 @@ const SeeAllProducts = () => {
                 </Text>
               </View>
             }
-            // small perf tweak: only update when filteredProducts changes
             extraData={filteredProducts.length}
           />
         )}
@@ -954,13 +985,13 @@ const SeeAllProducts = () => {
           handlePriceChange={handlePriceChange}
           selectedBrands={selectedBrands}
           toggleBrand={toggleBrand}
-          brands={brands}
+          brands={metadata.brands}
           selectedSizes={selectedSizes}
           toggleSize={toggleSize}
-          sizes={sizes}
+          sizes={metadata.sizes}
           selectedColors={selectedColors}
           toggleColor={toggleColor}
-          colors={colors}
+          colors={metadata.colors}
           ratingFilter={ratingFilter}
           setRatingFilter={setRatingFilter}
           availability={availability}
@@ -969,15 +1000,47 @@ const SeeAllProducts = () => {
           handleApplyFilters={handleApplyFilters}
           getActiveFilterCount={getActiveFilterCount}
           getColorValue={getColorValue}
+          isLoadingMetadata={isFetching && showFilterDrawer}
         />
       </View>
     </SafeAreaView>
   )
 }
 
-/* your existing styles - unchanged */
+/* Add these new styles to your existing styles object */
 const styles = StyleSheet.create({
-  // ... (the same styles you had originally)
+  // ... (all your existing styles remain the same)
+  
+  // Add these new styles:
+  loadingFilterSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  
+  loadingFilterText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 10,
+  },
+  
+  noOptionsText: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    padding: 20,
+  },
+  
+  metadataInfo: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  
+  // Keep all your existing styles as they were
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
@@ -1380,78 +1443,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 16,
   },
-  sliderTrack: {
-    height: 4,
-    backgroundColor: '#e9ecef',
-    borderRadius: 2,
-    position: 'relative',
-  },
-  sliderFill: {
-    height: 4,
-    backgroundColor: '#004CFF',
-    borderRadius: 2,
-    position: 'absolute',
-    top: 0,
-  },
-  sliderHandles: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+  slider: {
+    width: '100%',
     height: 40,
-  },
-  sliderHandle: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-    top: -10,
-  },
-  handleDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#004CFF',
-    borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  priceInputsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  priceInputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  priceInputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginRight: 8,
-  },
-  priceInput: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#004CFF',
-    textAlign: 'right',
-  },
-  priceSeparator: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#666',
   },
   chipContainer: {
     flexDirection: 'row',
@@ -1595,114 +1589,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     opacity: 0.8,
   },
-    sliderContainer: {
-    height: 80, // Increased height for dual sliders
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  
-  slider: {
-    width: '100%',
-    height: 40,
-  },
-  
-  dualSliderContainer: {
-    marginTop: 20,
-  },
-  
-  singleSlider: {
-    width: '100%',
-    height: 40,
-    marginBottom: 10,
-  },
-  
-  sliderLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
-  },
-
-  // Remove old slider track, fill, and handles styles
-  /*
-  sliderTrack: {
-    height: 4,
-    backgroundColor: '#e9ecef',
-    borderRadius: 2,
-    position: 'relative',
-  },
-  sliderFill: {
-    height: 4,
-    backgroundColor: '#004CFF',
-    borderRadius: 2,
-    position: 'absolute',
-    top: 0,
-  },
-  sliderHandles: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 40,
-  },
-  sliderHandle: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-    top: -10,
-  },
-  handleDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#004CFF',
-    borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  */
-
-  // Remove the entire priceInputsContainer and related styles
-  /*
-  priceInputsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  priceInputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  priceInputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginRight: 8,
-  },
-  priceInput: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#004CFF',
-    textAlign: 'right',
-  },
-  priceSeparator: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#666',
-  },
-  */
 })
 
 export default SeeAllProducts

@@ -4,12 +4,18 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const jsonApi = createApi({
   reducerPath: 'jsonApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: 'https://intermediate-asking-sim-penguin.trycloudflare.com' 
+    baseUrl: 'http://localhost:8000' 
   }),
   endpoints: (builder) => ({
     getAllProducts: builder.query({
       query: () => '/products',
     }),
+
+    getProductById: builder.query({
+  query: (id) => `/products/all/${id}`,
+  // Or if you have a specific endpoint for single product
+  // query: (id) => `/product/${id}`,
+}),
 
     getProductsByFilter: builder.query({
       query: (filters = {}) => {
@@ -55,7 +61,7 @@ export const jsonApi = createApi({
         
         console.log('Filters received:', filters);  
         // Add each filter parameter
-        addParam('categoryId', category);
+        addParam('category', category);
         addParam('brand', brand);
         addParam('minPrice', minPrice);
         addParam('maxPrice', maxPrice);
@@ -111,6 +117,7 @@ export const jsonApi = createApi({
 export const { 
   useGetAllProductsQuery, 
   useGetPostByIdQuery,
+  useGetProductByIdQuery,
   useGetCategoriesQuery,
   useGetProductsByTypesQuery,
   useSignUpMutation,
