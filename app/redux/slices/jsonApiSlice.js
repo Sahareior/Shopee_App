@@ -53,8 +53,9 @@ export const jsonApi = createApi({
           // Any other filter fields...
         } = filters;
         
+        console.log('Filters received:', filters);  
         // Add each filter parameter
-        addParam('category', category);
+        addParam('categoryId', category);
         addParam('brand', brand);
         addParam('minPrice', minPrice);
         addParam('maxPrice', maxPrice);

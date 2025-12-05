@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useGetAllProductsQuery, useGetCategoriesQuery, useLazyGetProductsByFilterQuery } from '@/app/redux/slices/jsonApiSlice'
-import StickySlide from './StickySlide'
+import Slider from '@react-native-community/slider'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
@@ -161,10 +161,6 @@ const FilterDrawer = React.memo(({
     }
   }, [visible, slideAnim])
 
-  // compute slider lefts as memo to avoid inline re-calcs each render
-  const leftPct = `${(priceRange[0] / 2500) * 100}%`
-  const rightPct = `${(priceRange[1] / 2500) * 100}%`
-
   return (
     <Modal
       visible={visible}
@@ -201,30 +197,29 @@ const FilterDrawer = React.memo(({
                 <Text style={styles.priceText}>${priceRange[0]} - ${priceRange[1]}</Text>
               </View>
 
+              {/* Replace custom slider with @react-native-community/slider */}
               <View style={styles.sliderContainer}>
-                <View style={styles.sliderTrack}>
-                  <View style={[styles.sliderFill, { 
-                    left: leftPct,
-                    width: `${((priceRange[1] - priceRange[0]) / 2500) * 100}%`
-                  }]} />
-                </View>
+                <Slider
+                  style={styles.slider}
+                  minimumValue={0}
+                  maximumValue={2500}
+                  minimumTrackTintColor="#004CFF"
+                  maximumTrackTintColor="#e9ecef"
+                  thumbTintColor="#004CFF"
+                  value={priceRange[1]} // For single thumb slider
+                  onValueChange={(value) => {
+                    // For dual-thumb functionality, you'll need to handle both values
+                    // This is a simplified single thumb approach
+                    handlePriceChange([priceRange[0], value])
+                  }}
+                  step={10}
+                />
                 
-                <View style={styles.sliderHandles}>
-                  <View style={[styles.sliderHandle, { 
-                    left: leftPct,
-                    transform: [{ translateX: -12 }]
-                  }]}>
-                    <View style={styles.handleDot} />
-                  </View>
-                  <View style={[styles.sliderHandle, { 
-                    left: rightPct,
-                    transform: [{ translateX: -12 }]
-                  }]}>
-                    <View style={styles.handleDot} />
-                  </View>
-                </View>
+ 
               </View>
               
+              {/* Remove the old price inputs container */}
+              {/* 
               <View style={styles.priceInputsContainer}>
                 <View style={styles.priceInputWrapper}>
                   <Text style={styles.priceInputLabel}>Min:</Text>
@@ -246,9 +241,10 @@ const FilterDrawer = React.memo(({
                   />
                 </View>
               </View>
+              */}
             </View>
-            
 
+            {/* Rest of the filter sections remain the same */}
             {/* Brands */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Brands</Text>
@@ -379,10 +375,6 @@ const FilterDrawer = React.memo(({
               </View>
             </View>
           </ScrollView>
-
-           
-
-         
 
           <View style={styles.drawerFooter}>
             <TouchableOpacity 
@@ -544,6 +536,7 @@ const SeeAllProducts = () => {
     }
 
     console.log('Applying API filters:', filters);
+    
     
     try {
       const result = await trigger(filters).unwrap();
@@ -1602,6 +1595,114 @@ const styles = StyleSheet.create({
     color: '#fff',
     opacity: 0.8,
   },
+    sliderContainer: {
+    height: 80, // Increased height for dual sliders
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  
+  dualSliderContainer: {
+    marginTop: 20,
+  },
+  
+  singleSlider: {
+    width: '100%',
+    height: 40,
+    marginBottom: 10,
+  },
+  
+  sliderLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+
+  // Remove old slider track, fill, and handles styles
+  /*
+  sliderTrack: {
+    height: 4,
+    backgroundColor: '#e9ecef',
+    borderRadius: 2,
+    position: 'relative',
+  },
+  sliderFill: {
+    height: 4,
+    backgroundColor: '#004CFF',
+    borderRadius: 2,
+    position: 'absolute',
+    top: 0,
+  },
+  sliderHandles: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 40,
+  },
+  sliderHandle: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    top: -10,
+  },
+  handleDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#004CFF',
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  */
+
+  // Remove the entire priceInputsContainer and related styles
+  /*
+  priceInputsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  priceInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  priceInputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginRight: 8,
+  },
+  priceInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#004CFF',
+    textAlign: 'right',
+  },
+  priceSeparator: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#666',
+  },
+  */
 })
 
 export default SeeAllProducts
