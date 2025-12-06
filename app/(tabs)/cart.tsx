@@ -1,75 +1,39 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, FlatList, Image, Dimensions } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
+import { useGetCartsQuery, useGetWishListsQuery } from '../redux/slices/jsonApiSlice'
 
 const { width: screenWidth } = Dimensions.get('window')
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: 'Wireless Bluetooth Headphones',
-      brand: 'AudioTech',
-      price: 199.99,
-      originalPrice: 299.99,
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      quantity: 1,
-      inStock: true,
-      color: 'Black',
-      size: 'M'
-    },
-    {
-      id: 2,
-      name: 'Smart Fitness Watch',
-      brand: 'FitGear',
-      price: 149.99,
-      originalPrice: 199.99,
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      quantity: 2,
-      inStock: true,
-      color: 'Silver',
-      size: 'L'
-    }
-  ])
+  const { data: cartApiData, isLoading, error } = useGetCartsQuery('693103eec8c1629ff4515f09')
+  const { data: wishlistApiData, isLoading: wishlistLoading, error: wishlistError } = useGetWishListsQuery('693103eec8c1629ff4515f09')
+  const [cartItems, setCartItems] = useState([])
 
-  const [wishlistItems, setWishlistItems] = useState([
-    {
-      id: 3,
-      name: 'Minimalist Backpack',
-      brand: 'UrbanPack',
-      price: 79.99,
-      originalPrice: 99.99,
-      image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      inStock: true,
-      rating: 4.7,
-      reviewCount: 204,
-    },
-    {
-      id: 4,
-      name: 'Organic Cotton T-Shirt',
-      brand: 'EcoWear',
-      price: 29.99,
-      originalPrice: 39.99,
-      image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      inStock: true,
-      rating: 4.3,
-      reviewCount: 67,
-    },
-    {
-      id: 5,
-      name: 'Ceramic Coffee Mug Set',
-      brand: 'HomeEssentials',
-      price: 34.99,
-      originalPrice: 49.99,
-      image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      inStock: false,
-      rating: 4.8,
-      reviewCount: 156,
-    }
-  ])
   const router = useRouter()
+
+  // Transform API data when it loads
+  useEffect(() => {
+    if (cartApiData?.success && cartApiData.data) {
+      const transformedItems = cartApiData.data.map(item => ({
+        id: item._id,
+        name: item.product.name,
+        brand: item.product.brand || 'Brand', // You might need to add brand to your product model
+        price: item.product.price,
+        originalPrice: item.product.originalPrice || item.product.price * 1.2, // Calculate or fetch from API
+        image: item.product.images[0],
+        quantity: item.quantity,
+        inStock: true, // You might want to add stock field to product
+        color: 'Default',
+        size: 'M',
+        productId: item.product._id, // Keep reference to original product ID
+        cartItemId: item._id // Keep reference to cart item ID
+      }))
+      setCartItems(transformedItems)
+    }
+  }, [cartApiData])
 
   const updateQuantity = (itemId, newQuantity) => {
     if (newQuantity < 1) return
@@ -78,10 +42,14 @@ const Cart = () => {
         item.id === itemId ? { ...item, quantity: newQuantity } : item
       )
     )
+    // TODO: Call API to update quantity on server
+    // You'll need an updateCartItem API call
   }
 
   const removeFromCart = (itemId) => {
     setCartItems(prevItems => prevItems.filter(item => item.id !== itemId))
+    // TODO: Call API to remove item from cart on server
+    // You'll need a removeFromCart API call
   }
 
   const moveToCart = (wishlistItem) => {
@@ -99,13 +67,11 @@ const Cart = () => {
       ])
     }
     // Remove from wishlist after moving to cart
-    setWishlistItems(prevItems => prevItems.filter(item => item.id !== wishlistItem.id))
+ 
   }
 
-
-
   const removeFromWishlist = (itemId) => {
-    setWishlistItems(prevItems => prevItems.filter(item => item.id !== itemId))
+   
   }
 
   const getTotalPrice = () => {
@@ -115,6 +81,8 @@ const Cart = () => {
   const getTotalItems = () => {
     return cartItems.reduce((total, item) => total + item.quantity, 0)
   }
+
+  console.log('wishlistApiData:', wishlistApiData?.data)
 
   const renderCartItem = ({ item }) => (
     <View style={styles.cartItem}>
@@ -130,9 +98,9 @@ const Cart = () => {
         </View>
         
         <View style={styles.priceContainer}>
-          <Text style={styles.currentPrice}>${item.price}</Text>
+          <Text style={styles.currentPrice}>${item.price.toFixed(2)}</Text>
           {item.originalPrice > item.price && (
-            <Text style={styles.originalPrice}>${item.originalPrice}</Text>
+            <Text style={styles.originalPrice}>${item.originalPrice.toFixed(2)}</Text>
           )}
         </View>
         
@@ -164,38 +132,51 @@ const Cart = () => {
     </View>
   )
 
-  const renderWishlistItem = ({ item }) => (
+const renderWishlistItem = ({ item }) => {
+  // Extract product details from your data structure
+  const product = item.product;
+  const image = product.images?.[0] || 'https://via.placeholder.com/80';
+  const price = product.price || 0;
+  
+  // Generate some default values for missing fields
+  const brand = product.brand || product.name.split(' ')[0]; // Use first word as brand
+  const originalPrice = product.originalPrice || Math.round(price * 1.2); // Add 20% markup
+  const rating = product.rating || 4.5; // Default rating
+  const reviewCount = product.reviewCount || Math.floor(Math.random() * 200) + 50; // Random reviews
+  const inStock = product.inStock !== undefined ? product.inStock : true; // Assume in stock
+  
+  return (
     <View style={styles.wishlistItem}>
-      <Image source={{ uri: item.image }} style={styles.wishlistItemImage} />
+      <Image source={{ uri: image }} style={styles.wishlistItemImage} />
       
-      {!item.inStock && (
+      {!inStock && (
         <View style={styles.outOfStockOverlay}>
           <Text style={styles.outOfStockText}>Out of Stock</Text>
         </View>
       )}
       
       <View style={styles.wishlistItemInfo}>
-        <Text style={styles.brand}>{item.brand}</Text>
-        <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+        <Text style={styles.brand}>{brand}</Text>
+        <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
         
         <View style={styles.ratingContainer}>
           <View style={styles.stars}>
             {[...Array(5)].map((_, index) => (
               <Ionicons
                 key={index}
-                name={index < Math.floor(item.rating) ? "star" : "star-outline"}
+                name={index < Math.floor(rating) ? "star" : "star-outline"}
                 size={12}
                 color="#FFD700"
               />
             ))}
           </View>
-          <Text style={styles.ratingText}>({item.reviewCount})</Text>
+          <Text style={styles.ratingText}>({reviewCount})</Text>
         </View>
         
         <View style={styles.priceContainer}>
-          <Text style={styles.currentPrice}>${item.price}</Text>
-          {item.originalPrice > item.price && (
-            <Text style={styles.originalPrice}>${item.originalPrice}</Text>
+          <Text style={styles.currentPrice}>${price.toFixed(2)}</Text>
+          {originalPrice > price && (
+            <Text style={styles.originalPrice}>${originalPrice.toFixed(2)}</Text>
           )}
         </View>
         
@@ -203,30 +184,59 @@ const Cart = () => {
           <TouchableOpacity 
             style={[
               styles.moveToCartButton,
-              !item.inStock && styles.disabledButton
+              !inStock && styles.disabledButton
             ]}
             onPress={() => moveToCart(item)}
-            disabled={!item.inStock}
+            disabled={!inStock}
           >
-            <Ionicons name="cart-outline" size={16} color={item.inStock ? "#fff" : "#999"} />
+            <Ionicons name="cart-outline" size={16} color={inStock ? "#fff" : "#999"} />
             <Text style={[
               styles.moveToCartText,
-              !item.inStock && styles.disabledButtonText
+              !inStock && styles.disabledButtonText
             ]}>
-              {item.inStock ? 'Add to Cart' : 'Out of Stock'}
+              {inStock ? 'Add to Cart' : 'Out of Stock'}
             </Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.wishlistDeleteButton}
-            onPress={() => removeFromWishlist(item.id)}
+            onPress={() => removeFromWishlist(item._id)} // Use _id instead of id
           >
             <Ionicons name="trash-outline" size={16} color="#666" />
           </TouchableOpacity>
         </View>
       </View>
     </View>
-  )
+  );
+};
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="cart-outline" size={60} color="#e0e0e0" />
+          <Text style={styles.loadingText}>Loading your cart...</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={60} color="#ff6b6b" />
+          <Text style={styles.errorTitle}>Something went wrong</Text>
+          <Text style={styles.errorSubtitle}>Unable to load your cart</Text>
+          <TouchableOpacity style={styles.retryButton}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -243,7 +253,7 @@ const Cart = () => {
             <FlatList
               data={cartItems}
               renderItem={renderCartItem}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={(item) => item.id}
               scrollEnabled={false}
               contentContainerStyle={styles.cartList}
             />
@@ -255,24 +265,28 @@ const Cart = () => {
             <Text style={styles.emptyCartSubtitle}>
               Add some items to get started
             </Text>
+            <TouchableOpacity 
+              style={styles.shopButton}
+              onPress={() => router.push('/home/Homepage')}
+            >
+              <Text style={styles.shopButtonText}>Start Shopping</Text>
+            </TouchableOpacity>
           </View>
         )}
 
         {/* Wishlist Section */}
-        {wishlistItems.length > 0 && (
+        {wishlistApiData.data.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>From Your Wishlist</Text>
               <Text style={styles.sectionSubtitle}>Items you might want to add</Text>
             </View>
             
-            <FlatList
-              data={wishlistItems}
-              renderItem={renderWishlistItem}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-              contentContainerStyle={styles.wishlistList}
-            />
+            <View style={{maxHeight: 300}} >
+          <ScrollView>
+            
+          </ScrollView>
+            </View>
           </View>
         )}
 
@@ -318,7 +332,10 @@ const Cart = () => {
             <Text style={styles.footerItems}>{getTotalItems()} items</Text>
           </View>
           
-          <TouchableOpacity onPress={()=>router.push('/home/Homepage/payments') } style={styles.checkoutButton}>
+          <TouchableOpacity 
+            onPress={() => router.push('/home/Homepage/payments')} 
+            style={styles.checkoutButton}
+          >
             <Text style={styles.checkoutText}>Proceed to Checkout</Text>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
           </TouchableOpacity>
@@ -334,6 +351,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#004CFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
   },
   header: {
     padding: 20,
@@ -434,7 +490,6 @@ const styles = StyleSheet.create({
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    // justifyContent:"flex-end",
     gap: 12,
   },
   quantityButton: {
@@ -478,6 +533,18 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  shopButton: {
+    backgroundColor: '#9b31adff',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  shopButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
   },
   wishlistList: {
     gap: 12,

@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const jsonApi = createApi({
   reducerPath: 'jsonApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: 'http://localhost:8000' 
+    baseUrl: 'https://pour-premiere-reliable-wife.trycloudflare.com' 
   }),
   endpoints: (builder) => ({
     getAllProducts: builder.query({
@@ -90,6 +90,10 @@ export const jsonApi = createApi({
     getCategories: builder.query({
       query: () => '/categories'
     }),
+
+    getRecentViewed: builder.query({
+      query: (id) => `/recent-view/${id}`
+    }),
     
     getProductsByTypes: builder.query({
       query: (type) => `/products/${type}`
@@ -101,6 +105,14 @@ export const jsonApi = createApi({
         method: 'POST',
         body: data
       })
+    }),
+
+    getCarts: builder.query({
+      query: (id) => `/cart/${id}`,
+    }),
+
+    getWishLists: builder.query({
+      query: (id) => `/wishlist/${id}`,
     }),
 
     signIn: builder.mutation({
@@ -117,11 +129,15 @@ export const jsonApi = createApi({
 export const { 
   useGetAllProductsQuery, 
   useGetPostByIdQuery,
+  useGetCartsQuery,
   useGetProductByIdQuery,
   useGetCategoriesQuery,
   useGetProductsByTypesQuery,
   useSignUpMutation,
   useSignInMutation,
   useGetProductsByFilterQuery,
-  useLazyGetProductsByFilterQuery
+  useLazyGetProductsByFilterQuery,
+  useGetWishListsQuery,
+  useGetRecentViewedQuery
+  
 } = jsonApi;

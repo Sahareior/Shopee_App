@@ -210,6 +210,10 @@ const RecentlyViewed = ({from, data}) => {
               >
                 {item}
               </Text>
+              {/* Active indicator */}
+              {activeStatus === item && (
+                <View style={styles.activeIndicator} />
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -316,7 +320,7 @@ const { width, height } = Dimensions.get('window')
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+  
     backgroundColor: 'white',
     paddingHorizontal: 16,
   },
@@ -325,24 +329,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 25,
-    marginTop: 10,
-    gap: 18,
+    padding: 1,
+    marginBottom: 5,
+    marginTop: 2,
+    gap: 8,
+    backgroundColor: '#F5F5F5',
   },
   tab: {
+    flex: 1,
     alignItems: 'center',
-    position: 'relative',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    marginRight: 8,
+    position: 'relative',
+    marginHorizontal: 4,
+  },
+  tabActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   tabText: {
     fontSize: 14,
-    paddingVertical: 7,
-    paddingHorizontal: 9,
     fontWeight: '600',
+    color: '#666666',
+  },
+  tabTextActive: {
     color: '#004CFF',
-    backgroundColor: '#E5EBFC',
+    fontWeight: '700',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: -6,
+    width: 20,
+    height: 3,
+    backgroundColor: '#004CFF',
+    borderRadius: 2,
   },
   section: {
     marginVertical: 30,

@@ -8,13 +8,15 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
-  SafeAreaView,
+
   FlatList,
   Alert
 } from 'react-native';
+
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetProductByIdQuery } from '../redux/slices/jsonApiSlice';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -411,8 +413,7 @@ const ProductDetailScreen = () => {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
         <ScrollView 
           style={styles.container}
           showsVerticalScrollIndicator={false}
@@ -523,7 +524,7 @@ const ProductDetailScreen = () => {
               onPress={handleAddToCart}
               disabled={!inStock || !selectedVariation}
             >
-              <Ionicons name="cart" size={18} color={COLORS.background} />
+              <Ionicons name="cart" size={24} color={COLORS.background} />
              
             </TouchableOpacity>
             
@@ -561,7 +562,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: 1,
     paddingVertical: SPACING.base,
     backgroundColor: COLORS.background,
     borderBottomWidth: 1,
@@ -911,7 +912,7 @@ const styles = StyleSheet.create({
   addToCartButton: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#cf44acff',
     borderRadius: 12,
     paddingVertical: 14,
     justifyContent: 'center',

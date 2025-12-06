@@ -49,11 +49,11 @@ const Header = () => {
 export default Header
 
 const styles = StyleSheet.create({
-    container:{
-        flex:1,
- paddingHorizontal: 12,
-   backgroundColor: 'white',
-    },
+ container: {
+  paddingHorizontal: 12,
+  backgroundColor: 'white',
+  paddingBottom: 42,
+},
 
     text1:{
         fontSize: 25,
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
      marginTop:16,
         padding:9,
         backgroundColor: '#F8F8F8',
-        paddingBottom:19
+        paddingBottom:2
     },
     text2:{
         fontSize:13,

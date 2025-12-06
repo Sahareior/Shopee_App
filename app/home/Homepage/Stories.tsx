@@ -132,7 +132,7 @@ export default Stories
 const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
-    paddingVertical: 15,
+    paddingVertical: 1,
   },
   scrollContainer: {
     paddingHorizontal: 12,

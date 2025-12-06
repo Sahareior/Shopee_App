@@ -1,97 +1,144 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, FlatList, Dimensions } from 'react-native'
-import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
+import React, { useEffect, useState } from 'react'
+import { ActivityIndicator, Alert, Dimensions, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import RecentlyViewed from '../home/Homepage/RecentlyViewed'
 import JustForYou from '../home/Homepage/JustForYou'
-import { useGetProductsByTypesQuery } from '../redux/slices/jsonApiSlice'
+import RecentlyViewed from '../home/Homepage/RecentlyViewed'
+import { useGetProductsByTypesQuery, useGetRecentViewedQuery, useGetWishListsQuery } from '../redux/slices/jsonApiSlice'
 
 const { width: screenWidth } = Dimensions.get('window')
 
 const Wishlist = () => {
-  const {data:productByType} = useGetProductsByTypesQuery('top_product')
-  const {data:forYou} = useGetProductsByTypesQuery('just_for_you')
-  const {data:recently_viewed} = useGetProductsByTypesQuery('recently_viewed')
-  const [wishlistItems, setWishlistItems] = useState([
-    {
-      id: 1,
-      name: 'Wireless Bluetooth Headphones',
-      brand: 'AudioTech',
-      price: 199.99,
-      originalPrice: 299.99,
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      inStock: true,
-      rating: 4.5,
-      reviewCount: 128,
-    },
-    {
-      id: 2,
-      name: 'Smart Fitness Watch',
-      brand: 'FitGear',
-      price: 149.99,
-      originalPrice: 199.99,
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      inStock: true,
-      rating: 4.2,
-      reviewCount: 89,
-    },
-    {
-      id: 3,
-      name: 'Minimalist Backpack',
-      brand: 'UrbanPack',
-      price: 79.99,
-      originalPrice: 99.99,
-      image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      inStock: false,
-      rating: 4.7,
-      reviewCount: 204,
-    },
-    {
-      id: 4,
-      name: 'Organic Cotton T-Shirt',
-      brand: 'EcoWear',
-      price: 29.99,
-      originalPrice: 39.99,
-      image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      inStock: true,
-      rating: 4.3,
-      reviewCount: 67,
-    },
-    {
-      id: 5,
-      name: 'Ceramic Coffee Mug Set',
-      brand: 'HomeEssentials',
-      price: 34.99,
-      originalPrice: 49.99,
-      image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      inStock: true,
-      rating: 4.8,
-      reviewCount: 156,
+  const { data: productByType, isLoading: isLoadingProducts } = useGetProductsByTypesQuery('top_product')
+  const { data: forYou, isLoading: isLoadingForYou } = useGetProductsByTypesQuery('just_for_you')
+  const { data: recentlyViewedData, isLoading: isLoadingRecent, refetch: refetchRecent } = useGetRecentViewedQuery('693103eec8c1629ff4515f09')
+  const { data: wishlistData, isLoading: isLoadingWishlist, refetch: refetchWishlist } = useGetWishListsQuery('693103eec8c1629ff4515f09')
+  
+  // State to manage local wishlist while APIs handle persistence
+  const [wishlistItems, setWishlistItems] = useState([])
+
+  // Transform API data to match component structure
+  const transformWishlistData = (data) => {
+    if (!data?.success || !data.data) return []
+    
+    return data.data.map((item) => ({
+      id: item._id,
+      productId: item.product._id,
+      name: item.product.name,
+      brand: item.product.brand || 'Brand',
+      price: item.product.price,
+      originalPrice: item.product.originalPrice || Math.round(item.product.price * 1.2),
+      image: item.product.images?.[0] || 'https://via.placeholder.com/100',
+      inStock: item.product.inStock !== undefined ? item.product.inStock : true,
+      rating: item.product.rating || 4.5,
+      reviewCount: item.product.reviewCount || Math.floor(Math.random() * 100) + 1,
+      discount: Math.round(((item.product.originalPrice || Math.round(item.product.price * 1.2)) - item.product.price) / (item.product.originalPrice || Math.round(item.product.price * 1.2)) * 100)
+    }))
+  }
+
+  const transformRecentViewedData = (data) => {
+    if (!data?.success || !data.data) return []
+    
+    return data.data.map((item) => ({
+      _id: item._id,
+      product: {
+        _id: item.product._id,
+        name: item.product.name,
+        price: item.product.price,
+        images: item.product.images || []
+      }
+    }))
+  }
+
+  // Initialize data from API
+  useEffect(() => {
+    if (wishlistData) {
+      const transformedData = transformWishlistData(wishlistData)
+      setWishlistItems(transformedData)
     }
-  ])
+  }, [wishlistData])
 
-  const removeFromWishlist = (itemId) => {
-    setWishlistItems(prevItems => prevItems.filter(item => item.id !== itemId))
+  const recentlyViewed = transformRecentViewedData(recentlyViewedData)
+
+  const handleRemoveFromWishlist = async (itemId) => {
+    try {
+      // In a real app, you would call your remove API here
+      // For now, we'll show an alert and update local state
+      Alert.alert(
+        "Remove Item",
+        "Are you sure you want to remove this item from your wishlist?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Remove", 
+            style: "destructive",
+            onPress: () => {
+              // Filter out the removed item
+              setWishlistItems(prevItems => prevItems.filter(item => item.id !== itemId))
+              
+              // Note: In production, you would need to call your remove API here
+              // Example API call:
+              // await removeFromWishlistAPI(itemId)
+              // Then refetch: refetchWishlist()
+            }
+          }
+        ]
+      )
+    } catch (error) {
+      console.error('Failed to remove from wishlist:', error)
+      Alert.alert("Error", "Failed to remove item from wishlist")
+    }
   }
 
-  const moveToCart = (item) => {
-    // Implement move to cart logic here
-    console.log('Moving to cart:', item.name)
-    // You can remove from wishlist after moving to cart
-    // removeFromWishlist(item.id)
+  const handleMoveToCart = (item) => {
+    Alert.alert(
+      "Move to Cart",
+      `Add "${item.name}" to your cart?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Add to Cart", 
+          onPress: () => {
+            console.log('Moving to cart:', item.name)
+            // First you would call add to cart API
+            // Then remove from wishlist
+            handleRemoveFromWishlist(item.id)
+          }
+        }
+      ]
+    )
   }
 
-  const clearAllWishlist = () => {
-    setWishlistItems([])
+  const handleClearAllWishlist = () => {
+    if (wishlistItems.length === 0) return
+    
+    Alert.alert(
+      "Clear All",
+      "Are you sure you want to remove all items from your wishlist?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Clear All", 
+          style: "destructive",
+          onPress: () => {
+            setWishlistItems([])
+            // Note: In production, you would need to call your clear all API here
+            // Example: await clearAllWishlistAPI()
+            // Then refetch: refetchWishlist()
+          }
+        }
+      ]
+    )
   }
 
   const renderWishlistItem = ({ item }) => (
     <View style={styles.wishlistItem}>
       <Image 
-        source={item.image} 
+        source={{ uri: item.image }} 
         style={styles.productImage}
         contentFit="cover"
+        transition={200}
       />
       
       {!item.inStock && (
@@ -119,11 +166,11 @@ const Wishlist = () => {
         </View>
         
         <View style={styles.priceContainer}>
-          <Text style={styles.currentPrice}>${item.price}</Text>
-          <Text style={styles.originalPrice}>${item.originalPrice}</Text>
+          <Text style={styles.currentPrice}>${item.price.toFixed(2)}</Text>
+          <Text style={styles.originalPrice}>${item.originalPrice.toFixed(2)}</Text>
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>
-              {Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}%
+              {item.discount}%
             </Text>
           </View>
         </View>
@@ -134,7 +181,7 @@ const Wishlist = () => {
               styles.cartButton,
               !item.inStock && styles.disabledButton
             ]}
-            onPress={() => moveToCart(item)}
+            onPress={() => handleMoveToCart(item)}
             disabled={!item.inStock}
           >
             <Ionicons name="cart-outline" size={16} color={item.inStock ? "#fff" : "#999"} />
@@ -148,7 +195,7 @@ const Wishlist = () => {
           
           <TouchableOpacity 
             style={styles.deleteButton}
-            onPress={() => removeFromWishlist(item.id)}
+            onPress={() => handleRemoveFromWishlist(item.id)}
           >
             <Ionicons name="trash-outline" size={16} color="#666" />
           </TouchableOpacity>
@@ -157,27 +204,55 @@ const Wishlist = () => {
     </View>
   )
 
+  const renderRecentItem = ({ item }) => (
+    <TouchableOpacity style={styles.recentItem}>
+      <Image 
+        source={{ uri: item.product.images[0] }} 
+        style={styles.recentItemImage}
+        contentFit="cover"
+        transition={200}
+      />
+      <View style={styles.recentItemInfo}>
+        <Text style={styles.recentItemName} numberOfLines={1}>
+          {item.product.name}
+        </Text>
+        <Text style={styles.recentItemPrice}>${item.product.price.toFixed(2)}</Text>
+      </View>
+    </TouchableOpacity>
+  )
+
+  if (isLoadingWishlist) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#004CFF" />
+        <Text style={styles.loadingText}>Loading your wishlist...</Text>
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
 
-        <RecentlyViewed from='home' data={productByType} />
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>My Wishlist</Text>
-            <Text style={styles.subtitle}>{wishlistItems.length} items saved</Text>
+        {/* Wishlist Header (moved above top products to avoid overlap) */}
+        <View style={styles.headerCard}>
+          <View style={styles.header}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="heart" size={22} color="#FF4444" style={styles.headerIcon} />
+              <View>
+                <Text style={styles.title}>My Wishlist</Text>
+                <Text style={styles.subtitle}>{wishlistItems.length} {wishlistItems.length === 1 ? 'item' : 'items'} saved</Text>
+              </View>
+            </View>
+
           </View>
-          
-          {wishlistItems.length > 0 && (
-            <TouchableOpacity style={styles.clearAllButton} onPress={clearAllWishlist}>
-              <Text style={styles.clearAllText}>Clear All</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
+        <RecentlyViewed from='home' data={productByType} />
+        
         {/* Wishlist Items */}
-        {wishlistItems.length > 0 ? (
+<View>
+          {wishlistItems.length > 0 ? (
           <FlatList
             data={wishlistItems}
             renderItem={renderWishlistItem}
@@ -197,9 +272,10 @@ const Wishlist = () => {
             </TouchableOpacity>
           </View>
         )}
+</View>
 
         {/* Recently Viewed Section */}
-        {wishlistItems.length > 0 && (
+        {wishlistItems.length > 0 && recentlyViewed.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Recently Viewed</Text>
@@ -210,31 +286,21 @@ const Wishlist = () => {
             </View>
             
             {/* Recently Viewed Items */}
-            <ScrollView 
-              horizontal 
+            <FlatList
+              data={recentlyViewed}
+              renderItem={renderRecentItem}
+              keyExtractor={(item) => item._id.toString()}
+              horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.recentlyViewedContainer}
-            >
-              {wishlistItems.slice(0, 3).map((item) => (
-                <TouchableOpacity key={item.id} style={styles.recentItem}>
-                  <Image 
-                    source={item.image} 
-                    style={styles.recentItemImage}
-                    contentFit="cover"
-                  />
-                  <View style={styles.recentItemInfo}>
-                    <Text style={styles.recentItemPrice}>${item.price}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            />
           </View>
         )}
 
         {/* Recommendations */}
-<View style={{paddingTop:30}}>
-  <JustForYou data={forYou} />
-</View>
+        <View style={{paddingTop:30}}>
+          <JustForYou data={forYou} />
+        </View>
       </ScrollView>
     </SafeAreaView>
   )
@@ -247,22 +313,49 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  headerCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 5,
+    zIndex: 10,
+  },
+  headerIcon: {
+    marginRight: 10,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0A0A0A',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
-    marginTop: 4,
+    marginTop: 2,
   },
   clearAllButton: {
     paddingHorizontal: 12,
@@ -276,7 +369,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   wishlistList: {
-    padding: 10,
+    padding: 2,
   },
   wishlistItem: {
     flexDirection: 'row',
@@ -377,12 +470,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   cartButton: {
-    
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 9,
-    width:159,
+    width: 159,
     backgroundColor: '#004CFF',
     paddingVertical: 6,
     borderRadius: 8,
@@ -465,98 +557,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   recentlyViewedContainer: {
-    gap: 12,
+    paddingRight: 20,
   },
   recentItem: {
-    width: 80,
+    width: 100,
     marginRight: 12,
   },
   recentItemImage: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     borderRadius: 8,
   },
   recentItemInfo: {
     marginTop: 8,
   },
-  recentItemPrice: {
+  recentItemName: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#000',
-  },
-  recommendationsContainer: {
-    gap: 12,
-  },
-  recommendationItem: {
-    width: 150,
-    marginRight: 12,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  recommendationImage: {
-    width: '100%',
-    height: 120,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  recommendationInfo: {
-    flex: 1,
-  },
-  recommendationBrand: {
-    fontSize: 10,
-    color: '#666',
     fontWeight: '500',
-    marginBottom: 2,
+    color: '#333',
+    marginBottom: 4,
   },
-  recommendationName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 6,
-    lineHeight: 16,
-  },
-  recommendationPrice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  recommendationCurrentPrice: {
+  recentItemPrice: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#000',
-  },
-  recommendationOriginalPrice: {
-    fontSize: 12,
-    color: '#999',
-    textDecorationLine: 'line-through',
-  },
-  addToWishlistButton: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    width: 24,
-    height: 24,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
   },
 })
