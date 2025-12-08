@@ -301,11 +301,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingHorizontal: 11,
+    paddingHorizontal: 7,
   },
   header: {
     marginBottom: 20,
     marginTop: 10,
+    paddingHorizontal: 4,
   },
   title: {
     fontSize: 24,

@@ -17,6 +17,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetProductByIdQuery } from '../redux/slices/jsonApiSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAddToCartTool, useAddToWishlistTool, useUpdateCartTool } from '../tools/useAddToCartTool';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -299,6 +300,9 @@ const StockBadge = ({ stock }) => {
 const ProductDetailScreen = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { addToCart } = useAddToCartTool();
+  const { addToWishlist } = useAddToWishlistTool();
+
   
   const { data: product, isLoading, error, refetch } = useGetProductByIdQuery(id);
   
@@ -346,23 +350,16 @@ const ProductDetailScreen = () => {
     }
   }, [product, selectedColor]);
 
-  const handleAddToCart = useCallback(() => {
-    if (!selectedVariation) {
-      Alert.alert('Please Select', 'Choose a color and size first');
-      return;
-    }
-    
-    if (selectedStock === 0) {
-      Alert.alert('Out of Stock', 'This item is currently unavailable');
-      return;
-    }
+const handleAddToCart =() =>{
+  const data ={
+    product: id,
+    quantity: quantity, 
+    user: '691f393838bceee55ce53ee5'
+  }
+  addToCart(data);
+  console.log(id)
+}
 
-    Alert.alert(
-      'Added to Cart',
-      `${product.name} (${selectedColor}, ${selectedSize}) x${quantity} added`,
-      [{ text: 'View Cart', onPress: () => router.push('/cart') }, { text: 'Continue' }]
-    );
-  }, [product, selectedVariation, selectedColor, selectedSize, quantity]);
 
   const handleBuyNow = useCallback(() => {
     if (!selectedVariation) {
@@ -511,7 +508,7 @@ const ProductDetailScreen = () => {
         </ScrollView>
 
         <View style={styles.actionBar}>
-          <TouchableOpacity style={styles.wishlistButton}>
+          <TouchableOpacity onPress={() => addToWishlist({ user: '691f393838bceee55ce53ee5', product: id })} style={styles.wishlistButton}>
             <Ionicons name="heart-outline" size={22} color={COLORS.textSecondary} />
           </TouchableOpacity>
           
@@ -521,7 +518,7 @@ const ProductDetailScreen = () => {
                 styles.addToCartButton,
                 (!inStock || !selectedVariation) && styles.buttonDisabled
               ]}
-              onPress={handleAddToCart}
+              onPress={() => handleAddToCart()}
               disabled={!inStock || !selectedVariation}
             >
               <Ionicons name="cart" size={24} color={COLORS.background} />

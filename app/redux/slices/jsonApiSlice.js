@@ -4,11 +4,27 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const jsonApi = createApi({
   reducerPath: 'jsonApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: 'https://pour-premiere-reliable-wife.trycloudflare.com' 
+    baseUrl: 'https://tribune-industrial-quoted-interfaces.trycloudflare.com' 
   }),
   endpoints: (builder) => ({
     getAllProducts: builder.query({
       query: () => '/products',
+    }),
+
+    createStory: builder.mutation({
+      query: (data) => ({
+        url: '/story',
+        method: 'POST',
+        body: data  
+      })
+    }),
+
+    getStory: builder.query({
+      query: (id) => `/story/${id}`,
+    }),
+
+    getMediaById: builder.query({
+      query: (id) => `/story/media/${id}`
     }),
 
     getProductById: builder.query({
@@ -99,6 +115,29 @@ export const jsonApi = createApi({
       query: (type) => `/products/${type}`
     }),
 
+    addCart: builder.mutation({
+      query: (data) => ({
+        url: '/cart',
+        method: 'POST',
+        body: data
+      })
+    }),
+
+    updateCart: builder.mutation({
+      query: ({ itemId, ...data }) => ({
+        url: `/cart/${itemId}`,
+        method: 'PUT',
+        body: data  
+      })
+    }),
+
+    deleteCart: builder.mutation({
+      query: (id) => ({
+        url: `/cart/${id}`,
+        method: 'DELETE'
+      })
+    }),
+
     signUp: builder.mutation({
       query: (data) => ({
         url: '/user/sign-up',
@@ -114,6 +153,21 @@ export const jsonApi = createApi({
     getWishLists: builder.query({
       query: (id) => `/wishlist/${id}`,
     }),
+    
+    addWishlist: builder.mutation({
+      query: (data) => ({
+        url: '/wishlist',
+        method: 'POST',
+        body: data
+      })
+    }),
+
+deleteWishlist: builder.mutation({
+      query: (id) => ({
+        url: `/wishlist/${id}`,
+        method: 'DELETE'
+      })
+    }),
 
     signIn: builder.mutation({
       query: (data) => ({
@@ -121,7 +175,9 @@ export const jsonApi = createApi({
         method: 'POST',
         body: data
       })
-    })
+    }),
+
+    
 
   }),
 });
@@ -131,13 +187,21 @@ export const {
   useGetPostByIdQuery,
   useGetCartsQuery,
   useGetProductByIdQuery,
+  useAddWishlistMutation,
+  useDeleteWishlistMutation,
+  useDeleteCartMutation,
   useGetCategoriesQuery,
+  useAddCartMutation,
+  useUpdateCartMutation,  
   useGetProductsByTypesQuery,
   useSignUpMutation,
   useSignInMutation,
   useGetProductsByFilterQuery,
   useLazyGetProductsByFilterQuery,
   useGetWishListsQuery,
+  useCreateStoryMutation,
+  useGetStoryQuery,
+  useLazyGetMediaByIdQuery,
   useGetRecentViewedQuery
   
 } = jsonApi;

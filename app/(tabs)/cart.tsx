@@ -4,20 +4,23 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useGetCartsQuery, useGetWishListsQuery } from '../redux/slices/jsonApiSlice'
+import { useDeleteCartTool, useUpdateCartTool } from '../tools/useAddToCartTool'
 
 const { width: screenWidth } = Dimensions.get('window')
 
 const Cart = () => {
-  const { data: cartApiData, isLoading, error } = useGetCartsQuery('693103eec8c1629ff4515f09')
+  const { data: cartApiData, isLoading, error,refetch:cartRefetch } = useGetCartsQuery('691f393838bceee55ce53ee5')
   const { data: wishlistApiData, isLoading: wishlistLoading, error: wishlistError } = useGetWishListsQuery('693103eec8c1629ff4515f09')
   const [cartItems, setCartItems] = useState([])
+    const { updateToCart } = useUpdateCartTool();
+    const {deleteFromCart} = useDeleteCartTool();
 
   const router = useRouter()
 
   // Transform API data when it loads
   useEffect(() => {
-    if (cartApiData?.success && cartApiData.data) {
-      const transformedItems = cartApiData.data.map(item => ({
+    if (cartApiData?.success && cartApiData?.data) {
+      const transformedItems = cartApiData?.data?.map(item => ({
         id: item._id,
         name: item.product.name,
         brand: item.product.brand || 'Brand', // You might need to add brand to your product model
@@ -35,19 +38,38 @@ const Cart = () => {
     }
   }, [cartApiData])
 
-  const updateQuantity = (itemId, newQuantity) => {
-    if (newQuantity < 1) return
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-      )
+ const updateQuantity = (itemId, newQuantity) => {
+  if (newQuantity < 1) return
+  console.log("Updating quantitadadadsadzy for item:", itemId );
+  // Find the item in cartItems
+  const itemToUpdate = cartItems.find(item => item.id === itemId)
+  if (!itemToUpdate) return
+  
+  // Update local state
+  setCartItems(prevItems =>
+    prevItems.map(item =>
+      item.id === itemId ? { ...item, quantity: newQuantity } : item
     )
-    // TODO: Call API to update quantity on server
-    // You'll need an updateCartItem API call
+  )
+  
+  // Prepare data for API call based on your backend requirements
+  const updateData = {
+    quantity: newQuantity
   }
+  
+  // Call the API - note: your backend expects userId and productId
+  // but your useUpdateCartTool expects userid and id
+  updateToCart({ 
+
+     itemId, // This should be the productId, not cartItemId
+    ...updateData 
+  })
+}
 
   const removeFromCart = (itemId) => {
     setCartItems(prevItems => prevItems.filter(item => item.id !== itemId))
+    deleteFromCart(itemId);
+  
     // TODO: Call API to remove item from cart on server
     // You'll need a removeFromCart API call
   }
@@ -275,7 +297,7 @@ const renderWishlistItem = ({ item }) => {
         )}
 
         {/* Wishlist Section */}
-        {wishlistApiData.data.length > 0 && (
+        {wishlistApiData?.data?.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>From Your Wishlist</Text>

@@ -5,6 +5,9 @@ import { StatusBar } from "expo-status-bar";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { store } from "./redux/store";
+import { ToastProvider } from 'react-native-toast-notifications'
+
+
 
 function RootLayoutNav() {
   const authState = useSelector((state) => state.auth);
@@ -78,7 +81,10 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <Provider store={store}>
+        <ToastProvider>
+
       <RootLayoutNav />
+        </ToastProvider>
     </Provider>
   );
 }

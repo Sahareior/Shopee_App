@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import JustForYou from '../home/Homepage/JustForYou'
 import RecentlyViewed from '../home/Homepage/RecentlyViewed'
 import { useGetProductsByTypesQuery, useGetRecentViewedQuery, useGetWishListsQuery } from '../redux/slices/jsonApiSlice'
+import { useDeleteWishlistTool } from '../tools/useAddToCartTool'
 
 const { width: screenWidth } = Dimensions.get('window')
 
@@ -13,7 +14,8 @@ const Wishlist = () => {
   const { data: productByType, isLoading: isLoadingProducts } = useGetProductsByTypesQuery('top_product')
   const { data: forYou, isLoading: isLoadingForYou } = useGetProductsByTypesQuery('just_for_you')
   const { data: recentlyViewedData, isLoading: isLoadingRecent, refetch: refetchRecent } = useGetRecentViewedQuery('693103eec8c1629ff4515f09')
-  const { data: wishlistData, isLoading: isLoadingWishlist, refetch: refetchWishlist } = useGetWishListsQuery('693103eec8c1629ff4515f09')
+  const { data: wishlistData, isLoading: isLoadingWishlist, refetch: refetchWishlist } = useGetWishListsQuery('691f393838bceee55ce53ee5')
+  const {deleteFromWishlist} = useDeleteWishlistTool()
   
   // State to manage local wishlist while APIs handle persistence
   const [wishlistItems, setWishlistItems] = useState([])
@@ -62,32 +64,15 @@ const Wishlist = () => {
   const recentlyViewed = transformRecentViewedData(recentlyViewedData)
 
   const handleRemoveFromWishlist = async (itemId) => {
+ console.log('Removing from wishlist:', itemId)
     try {
-      // In a real app, you would call your remove API here
-      // For now, we'll show an alert and update local state
-      Alert.alert(
-        "Remove Item",
-        "Are you sure you want to remove this item from your wishlist?",
-        [
-          { text: "Cancel", style: "cancel" },
-          { 
-            text: "Remove", 
-            style: "destructive",
-            onPress: () => {
-              // Filter out the removed item
-              setWishlistItems(prevItems => prevItems.filter(item => item.id !== itemId))
-              
-              // Note: In production, you would need to call your remove API here
-              // Example API call:
-              // await removeFromWishlistAPI(itemId)
-              // Then refetch: refetchWishlist()
-            }
-          }
-        ]
-      )
+      await deleteFromWishlist(itemId)
+      // Update local state
+      setWishlistItems((prevItems) => prevItems.filter((item) => item.id !== itemId))
+      // Optionally refetch from API to ensure sync
+     
     } catch (error) {
-      console.error('Failed to remove from wishlist:', error)
-      Alert.alert("Error", "Failed to remove item from wishlist")
+      console.error('Error removing from wishlist:', error)
     }
   }
 

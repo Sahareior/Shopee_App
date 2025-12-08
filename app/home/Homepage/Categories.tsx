@@ -7,7 +7,7 @@ import { useGetCategoriesQuery } from '@/app/redux/slices/jsonApiSlice';
 const Categories = () => {
   const router = useRouter();
 
-  const { data: categories, isLoading, error } = useGetCategoriesQuery();
+  const { data: categoriesData, isLoading, error } = useGetCategoriesQuery();
 
   // Handle loading and error states
   if (isLoading) {
@@ -26,27 +26,17 @@ const Categories = () => {
     );
   }
 
-  // Function to generate multiple images for grid view
-  // Since API only provides single image, we'll duplicate it for the grid
-  const generateImagesArray = (mainImageUrl) => {
-    // Create 4 images (for 2x2 grid) using the main image
-    // You could modify this to use different images if available
-    return [
-      mainImageUrl,
-      mainImageUrl,
-      mainImageUrl,
-      mainImageUrl
-    ];
-  };
-
-  // Filter to show only top-level categories (where parentCategory is null)
-  // Or show all categories based on your needs
-  const topLevelCategories = categories?.filter(cat => cat.parentCategory === null) || [];
+  // Extract the actual categories array from the response
+  const categories = categoriesData?.data || [];
   
-  // If you want to show all categories, just use categories array
-  const displayCategories = categories || [];
-
-
+  // Filter to show only top-level categories (where parentCategory is null)
+  const topLevelCategories = categories.filter(cat => cat.parentCategory === null);
+  
+  // Sort categories by order field
+  const sortedCategories = [...topLevelCategories].sort((a, b) => a.order - b.order);
+  
+  // Take first 4 categories to display
+  const displayCategories = sortedCategories.slice(0, 4);
 
   return (
     <View style={styles.container}>
@@ -60,7 +50,7 @@ const Categories = () => {
 
       {/* Categories Grid */}
       <View style={styles.categoriesGrid}>
-        {displayCategories.slice(0,4).map((category) => (
+        {displayCategories.map((category) => (
           <TouchableOpacity 
             key={category._id} 
             style={styles.categoryCard}
@@ -70,25 +60,52 @@ const Categories = () => {
             }}
           >
             <View style={styles.imagesGrid}>
-              {generateImagesArray(category.image).map((image, index) => (
-                <Image 
-                  key={index}
-                  source={{ uri: image }} 
-                  style={[
-                    styles.categoryImage,
-                    index === 0 && styles.topLeftImage,
-                    index === 1 && styles.topRightImage,
-                    index === 2 && styles.bottomLeftImage,
-                    index === 3 && styles.bottomRightImage
-                  ]}
-                  contentFit="cover"
-                />
-              ))}
+              {/* Use the actual images array from API */}
+              {category.images && category.images.length > 0 ? (
+                category.images.slice(0, 4).map((image, index) => (
+                  <Image 
+                    key={index}
+                    source={{ uri: image }} 
+                    style={[
+                      styles.categoryImage,
+                      index === 0 && styles.topLeftImage,
+                      index === 1 && styles.topRightImage,
+                      index === 2 && styles.bottomLeftImage,
+                      index === 3 && styles.bottomRightImage
+                    ]}
+                    contentFit="cover"
+                    transition={300}
+                    placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+                  />
+                ))
+              ) : (
+                // Fallback if no images
+                Array.from({ length: 4 }).map((_, index) => (
+                  <View 
+                    key={index}
+                    style={[
+                      styles.categoryImage,
+                      index === 0 && styles.topLeftImage,
+                      index === 1 && styles.topRightImage,
+                      index === 2 && styles.bottomLeftImage,
+                      index === 3 && styles.bottomRightImage,
+                      styles.placeholderImage
+                    ]}
+                  />
+                ))
+              )}
             </View>
             <Text style={styles.categoryName}>{category.name}</Text>
           </TouchableOpacity>
         ))}
       </View>
+      
+      {/* Show message if no categories */}
+      {displayCategories.length === 0 && !isLoading && (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No categories available</Text>
+        </View>
+      )}
     </View>
   )
 }
@@ -98,13 +115,16 @@ export default Categories
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginVertical: 20,
+    marginVertical: 0,
+    marginTop: 0,
+    paddingTop: 0,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+    paddingTop: 10,
   },
   title: {
     fontSize: 20,
@@ -125,40 +145,62 @@ const styles = StyleSheet.create({
     width: '48%', // 2 columns with gap
     alignItems: 'center',
     marginBottom: 20,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3.84,
+    elevation: 3,
   },
   imagesGrid: {
     width: '100%',
     height: 140,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 3,
-    borderRadius: 12,
+    gap: 2,
+    borderRadius: 10,
     overflow: 'hidden',
     marginBottom: 10,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
   },
   categoryImage: {
     width: '49%',
     height: '49%',
+    backgroundColor: '#f5f5f5',
+  },
+  placeholderImage: {
+    backgroundColor: '#e0e0e0',
   },
   topLeftImage: {
-    borderTopLeftRadius: 12,
+    borderTopLeftRadius: 10,
   },
   topRightImage: {
-    borderTopRightRadius: 12,
+    borderTopRightRadius: 10,
   },
   bottomLeftImage: {
-    borderBottomLeftRadius: 12,
+    borderBottomLeftRadius: 10,
   },
   bottomRightImage: {
-    borderBottomRightRadius: 12,
+    borderBottomRightRadius: 10,
   },
   categoryName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#000',
     textAlign: 'center',
+    marginTop: 4,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
   },
 });

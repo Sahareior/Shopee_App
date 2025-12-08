@@ -287,7 +287,7 @@ export default FlashSale
 const styles = StyleSheet.create({
   container: {
     marginVertical: 20,
-    paddingHorizontal: 11,
+    paddingHorizontal: 9,
   },
   scrollContainer: {
     position: 'relative',
@@ -323,6 +323,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal:2,
     marginBottom: 20,
   },
   titleContainer: {
