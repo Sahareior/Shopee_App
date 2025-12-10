@@ -38,6 +38,10 @@ const Cart = () => {
     }
   }, [cartApiData])
 
+
+  
+  
+
  const updateQuantity = (itemId, newQuantity) => {
   if (newQuantity < 1) return
   console.log("Updating quantitadadadsadzy for item:", itemId );
@@ -154,83 +158,7 @@ const Cart = () => {
     </View>
   )
 
-const renderWishlistItem = ({ item }) => {
-  // Extract product details from your data structure
-  const product = item.product;
-  const image = product.images?.[0] || 'https://via.placeholder.com/80';
-  const price = product.price || 0;
-  
-  // Generate some default values for missing fields
-  const brand = product.brand || product.name.split(' ')[0]; // Use first word as brand
-  const originalPrice = product.originalPrice || Math.round(price * 1.2); // Add 20% markup
-  const rating = product.rating || 4.5; // Default rating
-  const reviewCount = product.reviewCount || Math.floor(Math.random() * 200) + 50; // Random reviews
-  const inStock = product.inStock !== undefined ? product.inStock : true; // Assume in stock
-  
-  return (
-    <View style={styles.wishlistItem}>
-      <Image source={{ uri: image }} style={styles.wishlistItemImage} />
-      
-      {!inStock && (
-        <View style={styles.outOfStockOverlay}>
-          <Text style={styles.outOfStockText}>Out of Stock</Text>
-        </View>
-      )}
-      
-      <View style={styles.wishlistItemInfo}>
-        <Text style={styles.brand}>{brand}</Text>
-        <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-        
-        <View style={styles.ratingContainer}>
-          <View style={styles.stars}>
-            {[...Array(5)].map((_, index) => (
-              <Ionicons
-                key={index}
-                name={index < Math.floor(rating) ? "star" : "star-outline"}
-                size={12}
-                color="#FFD700"
-              />
-            ))}
-          </View>
-          <Text style={styles.ratingText}>({reviewCount})</Text>
-        </View>
-        
-        <View style={styles.priceContainer}>
-          <Text style={styles.currentPrice}>${price.toFixed(2)}</Text>
-          {originalPrice > price && (
-            <Text style={styles.originalPrice}>${originalPrice.toFixed(2)}</Text>
-          )}
-        </View>
-        
-        <View style={styles.wishlistActions}>
-          <TouchableOpacity 
-            style={[
-              styles.moveToCartButton,
-              !inStock && styles.disabledButton
-            ]}
-            onPress={() => moveToCart(item)}
-            disabled={!inStock}
-          >
-            <Ionicons name="cart-outline" size={16} color={inStock ? "#fff" : "#999"} />
-            <Text style={[
-              styles.moveToCartText,
-              !inStock && styles.disabledButtonText
-            ]}>
-              {inStock ? 'Add to Cart' : 'Out of Stock'}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.wishlistDeleteButton}
-            onPress={() => removeFromWishlist(item._id)} // Use _id instead of id
-          >
-            <Ionicons name="trash-outline" size={16} color="#666" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-};
+
 
   // Show loading state
   if (isLoading) {

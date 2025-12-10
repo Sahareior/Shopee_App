@@ -56,7 +56,7 @@ const Categories = () => {
             style={styles.categoryCard}
             onPress={() => {
               // Navigate to category products page
-              router.push(`/category/${category.slug}`);
+              router.push(`/home/Homepage/viewAllComponents/SeeAllProducts/?slug=${category.slug}`);
             }}
           >
             <View style={styles.imagesGrid}>

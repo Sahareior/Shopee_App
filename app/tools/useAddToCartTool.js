@@ -3,13 +3,13 @@ import { useToast } from "react-native-toast-notifications";
 
 // Custom hook for cart refetching
 export const useCartRefetch = () => {
-  const { refetch: cartRefetch } = useGetCartsQuery('691f393838bceee55ce53ee5');
+  const { refetch: cartRefetch } = useGetCartsQuery();
   return cartRefetch;
 };
 
 // Custom hook for wishlist refetching
 export const useWishlistRefetch = () => {
-  const { refetch: wishlistRefetch } = useGetWishListsQuery('691f393838bceee55ce53ee5');
+  const { refetch: wishlistRefetch } = useGetWishListsQuery();
   return wishlistRefetch;
 };
 
@@ -31,6 +31,7 @@ export const useAddToCartTool = () => {
         type: "success",
         placement: "top",
         duration: 2000,
+          offset: 90, 
       });
 
       return result;
@@ -40,6 +41,7 @@ export const useAddToCartTool = () => {
       toast.show("Failed to add to cart", {
         type: "danger",
         placement: "top",
+          offset: 40, 
       });
 
       throw err;
@@ -67,6 +69,7 @@ export const useUpdateCartTool = () => {
         type: "success",
         placement: "top",
         duration: 2000,
+          offset: 40, 
       });
       return result;
     } catch (err) {
@@ -100,6 +103,7 @@ export const useDeleteCartTool = () => {
         type: "success",
         placement: "top",
         duration: 2000,
+          offset: 40, 
       });
       return result;
     } catch (err) {
@@ -123,7 +127,7 @@ export const useAddToWishlistTool = () => {
 
   const addToWishlist = async ({ user, product }) => {
     try {
-      const result = await addWishlist({ user, product }).unwrap();
+      const result = await addWishlist({ product }).unwrap();
       
       // Call the refetch function
       await wishlistRefetch();
@@ -132,6 +136,7 @@ export const useAddToWishlistTool = () => {
         type: "success",
         placement: "top",
         duration: 2000,
+          offset: 40, 
       });
       
       return result;
@@ -147,6 +152,7 @@ export const useAddToWishlistTool = () => {
           type: "warning",
           placement: "top",
           duration: 2000,
+            offset: 40, 
         });
         return null; // Return null instead of throwing for duplicate case
       } 
@@ -159,6 +165,7 @@ export const useAddToWishlistTool = () => {
       toast.show(errorMessage, {
         type: "danger",
         placement: "top",
+          offset: 40, 
       });
       throw err;
     }
@@ -184,6 +191,7 @@ export const useDeleteWishlistTool = () => {
         type: "success",
         placement: "top",
         duration: 2000,
+          offset: 40, 
       });
       
       return result;
@@ -200,6 +208,7 @@ export const useDeleteWishlistTool = () => {
       toast.show(errorMessage, {
         type: "danger",
         placement: "top",
+          offset: 40, 
       });
       throw err;
     }
@@ -212,7 +221,7 @@ export const useDeleteWishlistTool = () => {
 export const useToggleWishlistTool = () => {
   const { addToWishlist } = useAddToWishlistTool();
   const { deleteFromWishlist } = useDeleteWishlistTool();
-  const { data: wishlistData } = useGetWishListsQuery('691f393838bceee55ce53ee5');
+  const { data: wishlistData } = useGetWishListsQuery();
   const toast = useToast();
 
   const toggleWishlist = async ({ user, product }) => {
@@ -238,6 +247,7 @@ export const useToggleWishlistTool = () => {
             type: "success",
             placement: "top",
             duration: 2000,
+              offset: 40, 
           });
           return { action: 'removed', data: wishlistItem };
         }
@@ -248,6 +258,7 @@ export const useToggleWishlistTool = () => {
             type: "success",
             placement: "top",
             duration: 2000,
+              offset: 40, 
           });
           return { action: 'added', data: result };
         }
@@ -263,7 +274,7 @@ export const useToggleWishlistTool = () => {
 
 // Utility hook to check if a product is in wishlist
 export const useCheckWishlistStatus = () => {
-  const { data: wishlistData } = useGetWishListsQuery('691f393838bceee55ce53ee5');
+  const { data: wishlistData } = useGetWishListsQuery();
 
   const isInWishlist = (productId) => {
     if (!productId || !wishlistData?.data) return false;

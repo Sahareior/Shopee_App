@@ -11,75 +11,91 @@ import {
   Keyboard,
   Alert
 } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '../redux/slices/authSlice'; // adjust path if needed
 import bub1 from '../../assets/images/b1.png'
 import bub2 from '../../assets/images/b2.png'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import { useSignInMutation } from '../redux/slices/jsonApiSlice'
+import { useSignInMutation } from '../redux/slices/jsonApiSlice';
+
 
 const LoginScreen = () => {
   const router = useRouter()
-  const [signIn] = useSignInMutation()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+ 
+  const dispatch = useDispatch();
+const [signIn] = useSignInMutation();
+
+useEffect(()=> {
+  const checkAuth = async () => {
+    const token = await AsyncStorage.getItem('authToken');
+   
+    
+
+  }
+  checkAuth()
+},[])
 
   const dismissKeyboard = () => {
     Keyboard.dismiss()
   }
 
-  const handleLogin = async () => {
-    // Dismiss keyboard first
-    Keyboard.dismiss()
-    
-    // Basic validation
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both email and password')
-      return
-    }
+const handleLogin = async () => {
+  Keyboard.dismiss();
 
-    if (!isValidEmail(email)) {
-      Alert.alert('Error', 'Please enter a valid email address')
-      return
-    }
-
-const data ={
-      email: email.trim(),
-      password: password.trim(),
-      timestamp: new Date().toISOString()
-    }
-
-    try{
-      const res = await signIn(data).unwrap()
-      console.log(res)
-    } catch(err){
-      console.log(err)
-    }
-
-    setLoading(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false)
-      
-      // For demo purposes, we'll just navigate
-      // In real app, you would make API call here
-      Alert.alert(
-        'Login Successful',
-        `Logged in as: ${email}`,
-        [
-          {
-            text: 'Continue',
-            onPress: () => {
-              router.push('/home/home-slider')
-            }
-          }
-        ]
-      )
-    }, 1500)
+  if (!email.trim() || !password.trim()) {
+    Alert.alert('Error', 'Please enter both email and password');
+    return;
   }
+  if (!isValidEmail(email)) {
+    Alert.alert('Error', 'Please enter a valid email address');
+    return;
+  }
+
+  const payload = { email: email.trim(), password: password.trim() };
+
+  try {
+    setLoading(true);
+    // signIn should return an object like { token, user, message }
+    const res = await signIn(payload).unwrap();
+    console.log('signIn response', res);
+
+    const token = res?.token; // adjust if your server nests token
+    const user  = res?.user;
+
+    if (!token) {
+      throw new Error('No token returned from server');
+    }
+
+    // 1) save to Redux
+    dispatch(setCredentials({ token, user }));
+
+    // 2) persist to AsyncStorage
+    await AsyncStorage.setItem('authToken', token);
+   await AsyncStorage.setItem('authUser', JSON.stringify(user));
+
+    // navigate
+   if(user?.firstLogin === true){
+    router.push('/home/home-slider');
+   }else{
+    router.push('/(tabs)/home');
+   }
+
+  } catch (err) {
+    console.log('Login error', err);
+    const msg = err?.data || err?.message || 'Login failed';
+    Alert.alert('Login failed', String(msg));
+  } finally {
+    setLoading(false);
+  }
+};
 
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

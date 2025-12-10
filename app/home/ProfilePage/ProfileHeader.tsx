@@ -3,12 +3,15 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
+import SearchBar from './SearchBar'
+
 
 const { width: screenWidth } = Dimensions.get('window')
 
 const ProfileHeader = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeBanner, setActiveBanner] = useState(0)
+  const [banners, setBanners] = useState([])
   const scrollViewRef = useRef(null)
   const route = useRouter()
   const intervalRef = useRef(null)
@@ -16,39 +19,49 @@ const ProfileHeader = () => {
   // Banner width calculation
   const bannerWidth = screenWidth - 32 // 16px padding on each side
 
-  // New Unsplash images - fashion/e-commerce themed
-  const banners = [
-    {
-      id: 1,
-      image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      title: 'Winter Collection',
-      subtitle: 'Cozy Styles Up to 60% Off'
-    },
-    {
-      id: 2,
-      image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      title: 'Smart Devices',
-      subtitle: 'Latest Tech Gadgets'
-    },
-    {
-      id: 3,
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      title: 'Fashion Sale',
-      subtitle: 'Designer Brands 50% Off'
-    },
-    {
-      id: 4,
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      title: 'Audio Gear',
-      subtitle: 'Premium Sound Experience'
-    },
-    {
-      id: 5,
-      image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.1.0&auto=format&fit=crop&w=800&q=80',
-      title: 'Fitness Gear',
-      subtitle: 'Stay Active & Healthy'
-    }
-  ]
+  // Initialize banners data
+  useEffect(() => {
+    const initialBanners = [
+      {
+        id: 1,
+        image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&auto=format&fit=crop&q=60',
+        title: 'Winter Collection',
+        subtitle: 'Cozy Styles Up to 60% Off'
+      },
+      {
+        id: 2,
+        image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&auto=format&fit=crop&q=60',
+        title: 'Smart Devices',
+        subtitle: 'Latest Tech Gadgets'
+      },
+      {
+        id: 3,
+        image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=60',
+        title: 'Fashion Sale',
+        subtitle: 'Designer Brands 50% Off'
+      },
+      {
+        id: 4,
+        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=60',
+        title: 'Audio Gear',
+        subtitle: 'Premium Sound Experience'
+      },
+      {
+        id: 5,
+        image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800&auto=format&fit=crop&q=60',
+        title: 'Fitness Gear',
+        subtitle: 'Stay Active & Healthy'
+      }
+    ]
+    
+    // Add fallback colors for testing
+    const bannersWithFallback = initialBanners.map((banner, index) => ({
+      ...banner,
+      fallbackColor: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'][index % 5]
+    }))
+    
+    setBanners(bannersWithFallback)
+  }, [])
 
   // Auto scroll function
   const scrollToNextBanner = () => {
@@ -63,15 +76,19 @@ const ProfileHeader = () => {
   }
 
   const scrollToBanner = (index) => {
-    setActiveBanner(index)
-    scrollViewRef.current?.scrollTo({
-      x: index * bannerWidth,
-      animated: true
-    })
+    if (index >= 0 && index < banners.length) {
+      setActiveBanner(index)
+      scrollViewRef.current?.scrollTo({
+        x: index * bannerWidth,
+        animated: true
+      })
+    }
   }
 
   // Setup auto-scroll interval
   useEffect(() => {
+    if (banners.length === 0) return
+    
     // Start auto-scroll
     intervalRef.current = setInterval(scrollToNextBanner, 5000) // 5 seconds
     
@@ -81,7 +98,7 @@ const ProfileHeader = () => {
         clearInterval(intervalRef.current)
       }
     }
-  }, [activeBanner]) // Re-run when activeBanner changes
+  }, [activeBanner, banners.length]) // Re-run when activeBanner or banners change
 
   // Reset timer when user manually interacts
   const handleManualScroll = (index) => {
@@ -91,10 +108,12 @@ const ProfileHeader = () => {
     }
     
     // Scroll to selected banner
-    scrollToBanner(index)
-    
-    // Restart auto-scroll after manual interaction
-    intervalRef.current = setInterval(scrollToNextBanner, 5000)
+    if (index >= 0 && index < banners.length) {
+      scrollToBanner(index)
+      
+      // Restart auto-scroll after manual interaction
+      intervalRef.current = setInterval(scrollToNextBanner, 5000)
+    }
   }
 
   // Calculate time until next auto-scroll
@@ -113,6 +132,11 @@ const ProfileHeader = () => {
     return () => clearInterval(countdown)
   }, [activeBanner])
 
+  // Debug: Log banner data
+  useEffect(() => {
+    console.log('Banners loaded:', banners.length)
+  }, [banners])
+
   return (
     <View style={styles.container}>
       {/* Header Section */}
@@ -129,103 +153,105 @@ const ProfileHeader = () => {
 
         <Text style={styles.subtitle}>Find Your desired product!</Text>
 
-        {/* Search Input */}
-        <TouchableOpacity 
-          style={styles.inputContainer}
-          onPress={() => route.push('/home/Homepage/_routeCompo/searchComponent')}
-        >
-          <TextInput
-            style={styles.input}
-            placeholder="Search products..."
-            placeholderTextColor="#999"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            editable={false} // Make it non-editable since it's just a button
-          />
-          <Ionicons 
-            name="search" 
-            size={20} 
-            color="#999" 
-            style={styles.searchIcon}
-          />
-        </TouchableOpacity>
+    {/* <SearchBar /> */}
       </View>
 
-      {/* Banner Carousel */}
-      <View style={styles.carouselContainer}>
-        <ScrollView
-          ref={scrollViewRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          onMomentumScrollEnd={(e) => {
-            const contentOffsetX = e.nativeEvent.contentOffset.x
-            const index = Math.round(contentOffsetX / bannerWidth)
-            setActiveBanner(index)
-          }}
-          scrollEventThrottle={16}
-          style={styles.carousel}
-        >
-          {banners.map((banner) => (
-            <View key={banner.id} style={[styles.bannerItem, { width: bannerWidth }]}>
-              <TouchableOpacity 
-                activeOpacity={0.9}
-                onPress={() => console.log(`Banner ${banner.id} clicked`)}
-              >
-                <Image
-                  source={banner.image}
-                  style={styles.bannerImage}
-                  contentFit="cover"
-                  transition={300}
-                  priority="high"
-                />
-                <View style={styles.bannerOverlay} />
-                <View style={styles.bannerContent}>
-                  <Text 
-                    style={styles.bannerTitle}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {banner.title}
-                  </Text>
-                  <Text 
-                    style={styles.bannerSubtitle}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {banner.subtitle}
-                  </Text>
-                  <TouchableOpacity style={styles.bannerButton}>
-                    <Text style={styles.bannerButtonText}>Shop Now</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </ScrollView>
+      {/* Banner Carousel - Only render if banners exist */}
+      {banners.length > 0 ? (
+        <View style={styles.carouselContainer}>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            onMomentumScrollEnd={(e) => {
+              const contentOffsetX = e.nativeEvent.contentOffset.x
+              const index = Math.round(contentOffsetX / bannerWidth)
+              if (index >= 0 && index < banners.length) {
+                setActiveBanner(index)
+              }
+            }}
+            scrollEventThrottle={16}
+            style={styles.carousel}
+            contentContainerStyle={styles.carouselContent}
+          >
+            {banners.map((banner) => (
+              <View key={banner.id} style={[styles.bannerItem, { width: bannerWidth }]}>
+                <TouchableOpacity 
+                  activeOpacity={0.9}
+                  onPress={() => console.log(`Banner ${banner.id} clicked`)}
+                  style={styles.bannerTouchable}
+                >
+                  {/* Fallback background in case image fails to load */}
+                  <View style={[styles.bannerFallback, { backgroundColor: banner.fallbackColor }]}>
+                    <Image
+                      source={{ uri: banner.image }}
+                      style={styles.bannerImage}
+                      contentFit="cover"
+                      transition={300}
+                      onError={(error) => {
+                        console.log('Image load error:', error.nativeEvent.error)
+                        console.log('Failed URL:', banner.image)
+                      }}
+                      onLoad={() => console.log(`Banner ${banner.id} loaded successfully`)}
+                    />
+                  </View>
+                  <View style={styles.bannerOverlay} />
+                  <View style={styles.bannerContent}>
+                    <Text 
+                      style={styles.bannerTitle}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {banner.title}
+                    </Text>
+                    <Text 
+                      style={styles.bannerSubtitle}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {banner.subtitle}
+                    </Text>
+                    <TouchableOpacity style={styles.bannerButton}>
+                      <Text style={styles.bannerButtonText}>Shop Now</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
 
-        {/* Banner Indicators with Timer Dots */}
-        <View style={styles.indicatorsContainer}>
-          {banners.map((_, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.indicator,
-                activeBanner === index && styles.indicatorActive
-              ]}
-              onPress={() => handleManualScroll(index)}
-            />
-          ))}
-          
-          {/* Timer indicator */}
-          <View style={styles.timerContainer}>
-            <Text style={styles.timerText}>
-              Next in {timeLeft}s
-            </Text>
+          {/* Banner Indicators with Timer Dots */}
+          <View style={styles.indicatorsContainer}>
+            {banners.map((_, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.indicator,
+                  activeBanner === index && styles.indicatorActive
+                ]}
+                onPress={() => handleManualScroll(index)}
+                activeOpacity={0.7}
+              />
+            ))}
+            
+            {/* Timer indicator */}
+            <View style={styles.timerContainer}>
+              <Text style={styles.timerText}>
+                Next in {timeLeft}s
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
+      ) : (
+        // Loading/placeholder state
+        <View style={[styles.carouselContainer, styles.carouselPlaceholder]}>
+          <View style={[styles.bannerItem, { width: bannerWidth, backgroundColor: '#f0f0f0' }]}>
+            <Text style={styles.placeholderText}>Loading banners...</Text>
+          </View>
+        </View>
+      )}
     </View>
   )
 }
@@ -301,12 +327,16 @@ const styles = StyleSheet.create({
   },
   carouselContainer: {
     marginBottom: 10,
+    minHeight: 180, // Fixed height to prevent layout shift
   },
   carousel: {
     borderRadius: 16,
   },
+  carouselContent: {
+    alignItems: 'center',
+  },
   bannerItem: {
-    height: 180, // Slightly taller for better visual
+    height: 180,
     borderRadius: 16,
     overflow: 'hidden',
     elevation: 3,
@@ -314,6 +344,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  bannerTouchable: {
+    flex: 1,
+  },
+  bannerFallback: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
   },
   bannerImage: {
     width: '100%',
@@ -398,5 +436,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#004CFF',
     fontWeight: '600',
+  },
+  carouselPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: '#666',
+    fontSize: 16,
+    textAlign: 'center',
+    padding: 20,
   },
 })

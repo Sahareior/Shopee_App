@@ -253,6 +253,7 @@ const ViewAllCategories = () => {
             key={category.id} 
             style={styles.categoryCard}
             activeOpacity={0.7}
+            onPress={()=>   router.push(`/home/Homepage/viewAllComponents/SeeAllProducts/?slug=${category.slug}`)}
           >
             <View style={styles.imagesContainer}>
               <View style={styles.imagesGrid}>

@@ -370,6 +370,7 @@ const Payments = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   
+  
   const fadeAnim = useFadeIn();
   const slideAnim = useRef(new Animated.Value(300)).current;
 
@@ -1178,10 +1179,10 @@ const styles = StyleSheet.create({
   // Success Notification
   successNotification: {
     position: 'absolute',
-    top: 0,
+    top: -250,
     left: 20,
     right: 20,
-    backgroundColor: 'white',
+    backgroundColor: '#3C4454',
     padding: 20,
     borderRadius: 16,
     flexDirection: 'row',
@@ -1201,7 +1202,7 @@ const styles = StyleSheet.create({
   successText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: 'white',
     marginBottom: 2,
   },
   successSubtext: {

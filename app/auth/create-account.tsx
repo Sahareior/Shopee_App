@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
 import { useRouter } from 'expo-router'
 import { useDispatch } from 'react-redux'
 import bubble from '../../assets/images/bubble.png'
@@ -21,6 +22,7 @@ import { Image } from 'expo-image'
 import { useSignUpMutation } from '../redux/slices/jsonApiSlice'
 // import { setCredentials } from '../redux/slices/authSlice'
 import {setCredentials} from '../redux/slices/authSlice'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const CreateAccount = () => {
   const [signUp] = useSignUpMutation()
@@ -40,16 +42,6 @@ const CreateAccount = () => {
     Alert.alert(
       "Account Created!",
       "Your account has been created successfully.",
-      [
-        {
-          text: "Continue",
-          onPress: () => {
-            // Navigate to home page
-            router.replace('/auth/Login')
-          }
-        }
-      ],
-      { cancelable: false }
     )
   }
 
@@ -76,7 +68,14 @@ const CreateAccount = () => {
     try {
       const res = await signUp(data).unwrap()
       console.log("Signup response:", res)
+      await AsyncStorage.setItem('authToken', res.token);
+      await AsyncStorage.setItem('authUser', JSON.stringify(res.user));
       
+         if(res?.user?.firstLogin === true){
+    router.push('/home/home-slider');
+   }else{
+    router.push('/(tabs)/home');
+   }
       // Store user data in Redux (assuming response has user and token)
       dispatch(setCredentials({
         user: res.user || { name: data.name, email: data.email },

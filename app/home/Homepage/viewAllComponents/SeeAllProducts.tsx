@@ -13,7 +13,7 @@ import {
 } from 'react-native'
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useGetAllProductsQuery, useGetCategoriesQuery, useLazyGetProductsByFilterQuery } from '@/app/redux/slices/jsonApiSlice'
@@ -106,12 +106,6 @@ const ProductCard = React.memo(({ item, onPress }) => {
       </View>
     </TouchableOpacity>
   )
-}, (prevProps, nextProps) => {
-  return prevProps.item._id === nextProps.item._id &&
-         prevProps.item.price === nextProps.item.price &&
-         prevProps.item.discountPrice === nextProps.item.discountPrice &&
-         prevProps.item.rating === nextProps.item.rating &&
-         prevProps.onPress === nextProps.onPress
 })
 
 /* ---------------------------
@@ -121,8 +115,6 @@ const FilterDrawer = React.memo(({
   visible,
   onClose,
   priceRange,
-  handleLowPriceChange,
-  handleHighPriceChange,
   handlePriceChange,
   selectedBrands,
   toggleBrand,
@@ -161,13 +153,12 @@ const FilterDrawer = React.memo(({
     }
   }, [visible, slideAnim])
 
-  // Loading indicator for filter sections
   const FilterSectionLoader = () => (
     <View style={styles.loadingFilterSection}>
       <ActivityIndicator size="small" color="#004CFF" />
       <Text style={styles.loadingFilterText}>Loading options...</Text>
     </View>
-  );
+  )
 
   return (
     <Modal
@@ -198,13 +189,11 @@ const FilterDrawer = React.memo(({
           </View>
 
           <ScrollView style={styles.filterContent} showsVerticalScrollIndicator={false}>
-            {/* Price Range */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Price Range</Text>
               <View style={styles.priceRangeDisplay}>
                 <Text style={styles.priceText}>${priceRange[0]} - ${priceRange[1]}</Text>
               </View>
-
               <View style={styles.sliderContainer}>
                 <Slider
                   style={styles.slider}
@@ -222,7 +211,6 @@ const FilterDrawer = React.memo(({
               </View>
             </View>
 
-            {/* Brands */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Brands</Text>
               {isLoadingMetadata ? (
@@ -252,7 +240,6 @@ const FilterDrawer = React.memo(({
               )}
             </View>
 
-            {/* Sizes */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Sizes</Text>
               {isLoadingMetadata ? (
@@ -282,7 +269,6 @@ const FilterDrawer = React.memo(({
               )}
             </View>
 
-            {/* Colors */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Colors</Text>
               {isLoadingMetadata ? (
@@ -310,7 +296,6 @@ const FilterDrawer = React.memo(({
               )}
             </View>
 
-            {/* Rating */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Customer Rating</Text>
               <View style={styles.ratingFilterContainer}>
@@ -339,7 +324,6 @@ const FilterDrawer = React.memo(({
               </View>
             </View>
 
-            {/* Availability */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Availability</Text>
               <View style={styles.availabilityContainer}>
@@ -397,10 +381,20 @@ const FilterDrawer = React.memo(({
    --------------------------- */
 const SeeAllProducts = () => {
   const router = useRouter()
+  const params = useLocalSearchParams()
   const {data: allCategories} = useGetCategoriesQuery()
   const {data: allPro} = useGetAllProductsQuery()
-  const [trigger, { data: filterResponse, isLoading, isFetching }] = useLazyGetProductsByFilterQuery();
+  const [trigger, { data: filterResponse, isLoading, isFetching }] = useLazyGetProductsByFilterQuery()
   
+  const slugFromUrl = params.slug || ''
+  console.log('Slug from URL:', slugFromUrl)
+  
+  const getInitialCategory = useCallback(() => {
+    if (!slugFromUrl || !allCategories?.data) return 'All'
+    const categoryFromSlug = allCategories.data.find(cat => cat.slug === slugFromUrl)
+    return categoryFromSlug?.name || 'All'
+  }, [slugFromUrl, allCategories])
+
   const [activeCategory, setActiveCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('popular')
@@ -413,7 +407,6 @@ const SeeAllProducts = () => {
     colors: []
   })
   
-  // Advanced filter states
   const [priceRange, setPriceRange] = useState([0, 2500])
   const [selectedBrands, setSelectedBrands] = useState([])
   const [selectedSizes, setSelectedSizes] = useState([])
@@ -423,12 +416,34 @@ const SeeAllProducts = () => {
   
   const searchTimeoutRef = useRef(null)
 
-  // Initialize products from API data
+  // Initialize category from slug
+  useEffect(() => {
+    if (allCategories?.data && slugFromUrl) {
+      const initialCategory = getInitialCategory()
+      console.log('Setting initial category to:', initialCategory)
+      setActiveCategory(initialCategory)
+    }
+  }, [allCategories, slugFromUrl, getInitialCategory])
+
+  // Initialize products
   useEffect(() => {
     if (allPro && allPro.length > 0) {
       setProducts(allPro)
-      setFilteredProducts(allPro)
-      // Initialize metadata from all products
+      
+      if (slugFromUrl && allCategories?.data) {
+        const categoryFromSlug = allCategories.data.find(cat => cat.slug === slugFromUrl)
+        if (categoryFromSlug) {
+          const filteredByCategory = allPro.filter(product => 
+            product.categoryId?.name === categoryFromSlug.name
+          )
+          setFilteredProducts(filteredByCategory)
+        } else {
+          setFilteredProducts(allPro)
+        }
+      } else {
+        setFilteredProducts(allPro)
+      }
+      
       const b = new Set()
       const s = new Set()
       const c = new Set()
@@ -447,12 +462,10 @@ const SeeAllProducts = () => {
         colors: Array.from(c).sort()
       })
     }
-  }, [allPro])
+  }, [allPro, slugFromUrl, allCategories])
 
-  // Update metadata when filter response changes
   useEffect(() => {
     if (filterResponse) {
-      // If response has metadata field (from modified API)
       if (filterResponse.metadata) {
         setMetadata({
           brands: filterResponse.metadata.brands || [],
@@ -461,10 +474,7 @@ const SeeAllProducts = () => {
         })
         setFilteredProducts(filterResponse.products || [])
       } else {
-        // If response is just the products array (from original API)
         setFilteredProducts(filterResponse)
-        
-        // Extract metadata from filtered products
         const b = new Set()
         const s = new Set()
         const c = new Set()
@@ -495,201 +505,193 @@ const SeeAllProducts = () => {
     { label: 'Most Reviewed', value: 'reviews', icon: 'chatbubble' }
   ]
 
-  // Build API filters object
   const buildApiFilters = useCallback(() => {
-    const filters = {};
+    const filters = {}
     
     // Category filter
     if (activeCategory !== 'All') {
-      const selectedCategory = allCategories?.find(cat => cat.name === activeCategory);
+      const selectedCategory = allCategories?.data?.find(cat => cat.name === activeCategory)
       if (selectedCategory) {
-        filters.category = selectedCategory._id;
+        filters.category = selectedCategory._id
       }
     }
     
     // Search filter
     if (searchQuery.trim()) {
-      filters.search = searchQuery.trim();
+      filters.search = searchQuery.trim()
     }
     
     // Price range filter
     if (priceRange[0] > 0 || priceRange[1] < 2500) {
-      filters.minPrice = priceRange[0];
-      filters.maxPrice = priceRange[1];
+      filters.minPrice = priceRange[0]
+      filters.maxPrice = priceRange[1]
     }
     
     // Brands filter
     if (selectedBrands.length > 0) {
-      filters.brand = selectedBrands;
+      filters.brand = selectedBrands
     }
     
     // Sizes filter
     if (selectedSizes.length > 0) {
-      filters.size = selectedSizes;
+      filters.size = selectedSizes
     }
     
     // Colors filter
     if (selectedColors.length > 0) {
-      filters.color = selectedColors;
+      filters.color = selectedColors
     }
     
     // Rating filter
     if (ratingFilter > 0) {
-      filters.rating = ratingFilter;
+      filters.rating = ratingFilter
     }
     
     // Availability filter
     if (availability === 'inStock') {
-      filters.inStock = true;
+      filters.inStock = true
     }
     
     // Sorting
     if (sortBy === 'newest') {
-      filters.sortBy = 'createdAt:desc';
-    } else if (sortBy === 'popular') {
-      // leave default
+      filters.sortBy = 'createdAt:desc'
     } else if (sortBy !== 'popular') {
-      filters.sortBy = sortBy;
+      filters.sortBy = sortBy
     }
     
-    return filters;
+    return filters
   }, [activeCategory, allCategories, searchQuery, priceRange, selectedBrands, selectedSizes, selectedColors, ratingFilter, availability, sortBy])
 
-  // Apply filters via API
   const applyApiFilters = useCallback(async () => {
-    const filters = buildApiFilters();
+    const filters = buildApiFilters()
     
-    // If no filters are active, use getAllProducts data
     if (Object.keys(filters).length === 0 && !searchQuery.trim()) {
-      if (allPro && allPro.length > 0) {
-        setFilteredProducts(allPro);
+      if (slugFromUrl && allCategories?.data && allPro) {
+        const categoryFromSlug = allCategories.data.find(cat => cat.slug === slugFromUrl)
+        if (categoryFromSlug) {
+          const filteredByCategory = allPro.filter(product => 
+            product.categoryId?.name === categoryFromSlug.name
+          )
+          setFilteredProducts(filteredByCategory)
+          return
+        }
       }
-      return;
+      
+      if (allPro && allPro.length > 0) {
+        setFilteredProducts(allPro)
+      }
+      return
     }
 
-    console.log('Applying API filters:', filters);
+    console.log('Applying API filters:', filters)
     
     try {
-      const result = await trigger(filters).unwrap();
-      // Metadata update handled in useEffect above
+      const result = await trigger(filters).unwrap()
       if (result && !result.metadata) {
-        // If API doesn't return metadata, we'll extract it in useEffect
-        console.log('API response received, extracting metadata...');
+        console.log('API response received, extracting metadata...')
       }
     } catch (error) {
-      console.error('Filter error:', error);
-      // Fallback to local filtering if API fails
-      fallbackLocalFiltering();
+      console.error('Filter error:', error)
+      fallbackLocalFiltering()
     }
-  }, [buildApiFilters, trigger, allPro, searchQuery])
+  }, [buildApiFilters, trigger, allPro, searchQuery, slugFromUrl, allCategories])
 
-  // Fallback to local filtering if API fails
   const fallbackLocalFiltering = useCallback(() => {
-    let filtered = [...products];
+    let filtered = [...products]
 
-    // Filter by category
     if (activeCategory !== 'All') {
       filtered = filtered.filter(product => 
         product.categoryId?.name === activeCategory
-      );
+      )
     }
 
-    // Filter by search query
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+      const query = searchQuery.toLowerCase()
       filtered = filtered.filter(product =>
         product.name?.toLowerCase().includes(query) ||
         product.categoryId?.name?.toLowerCase().includes(query) ||
         product.brand?.toLowerCase().includes(query) ||
         product.description?.toLowerCase().includes(query)
-      );
+      )
     }
 
-    // Filter by price range
     filtered = filtered.filter(product => {
-      const price = product.discountPrice || product.price;
-      return price >= priceRange[0] && price <= priceRange[1];
-    });
+      const price = product.discountPrice || product.price
+      return price >= priceRange[0] && price <= priceRange[1]
+    })
 
-    // Filter by brands
     if (selectedBrands.length > 0) {
       filtered = filtered.filter(product => 
         product.brand && selectedBrands.includes(product.brand)
-      );
+      )
     }
 
-    // Filter by sizes
     if (selectedSizes.length > 0) {
       filtered = filtered.filter(product => 
         product.variations?.some(variation => selectedSizes.includes(variation.size))
-      );
+      )
     }
 
-    // Filter by colors
     if (selectedColors.length > 0) {
       filtered = filtered.filter(product => 
         product.variations?.some(variation => selectedColors.includes(variation.color))
-      );
+      )
     }
 
-    // Filter by rating
     if (ratingFilter > 0) {
-      filtered = filtered.filter(product => product.rating >= ratingFilter);
+      filtered = filtered.filter(product => product.rating >= ratingFilter)
     }
 
-    // Filter by availability
     if (availability === 'inStock') {
       filtered = filtered.filter(product => 
         product.variations?.some(variation => variation.stock > 0)
-      );
+      )
     }
 
-    // Sort products locally
     switch (sortBy) {
       case 'newest':
-        filtered = filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-        break;
+        filtered = filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        break
       case 'price:asc':
         filtered = filtered.sort((a, b) => 
           (a.discountPrice || a.price) - (b.discountPrice || b.price)
-        );
-        break;
+        )
+        break
       case 'price:desc':
         filtered = filtered.sort((a, b) => 
           (b.discountPrice || b.price) - (a.discountPrice || a.price)
-        );
-        break;
+        )
+        break
       case 'rating:desc':
-        filtered = filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
+        filtered = filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        break
       case 'popular':
       default:
         filtered = filtered.sort((a, b) => {
-          const aIsTrending = a.labels?.includes('top_product') || a.labels?.includes('flash_deal');
-          const bIsTrending = b.labels?.includes('top_product') || b.labels?.includes('flash_deal');
-          return (bIsTrending ? 1 : 0) - (aIsTrending ? 1 : 0) || (b.reviews || 0) - (a.reviews || 0);
-        });
-        break;
+          const aIsTrending = a.labels?.includes('top_product') || a.labels?.includes('flash_deal')
+          const bIsTrending = b.labels?.includes('top_product') || b.labels?.includes('flash_deal')
+          return (bIsTrending ? 1 : 0) - (aIsTrending ? 1 : 0) || (b.reviews || 0) - (a.reviews || 0)
+        })
+        break
     }
 
-    setFilteredProducts(filtered);
+    setFilteredProducts(filtered)
   }, [products, activeCategory, searchQuery, priceRange, selectedBrands, selectedSizes, selectedColors, ratingFilter, availability, sortBy])
 
-  // Debounced apply when filters change
   useEffect(() => {
     if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+      clearTimeout(searchTimeoutRef.current)
     }
     
     searchTimeoutRef.current = setTimeout(() => {
-      applyApiFilters();
-    }, 500); // 500ms debounce
+      applyApiFilters()
+    }, 500)
     
     return () => {
       if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+        clearTimeout(searchTimeoutRef.current)
       }
-    };
+    }
   }, [
     activeCategory, 
     searchQuery, 
@@ -701,27 +703,27 @@ const SeeAllProducts = () => {
     ratingFilter, 
     availability,
     applyApiFilters
-  ]);
+  ])
 
-  // handlers memoized so they don't change identity each render
+  const getPageTitle = useCallback(() => {
+    if (!slugFromUrl) return 'All Products'
+    
+    if (allCategories?.data) {
+      const category = allCategories.data.find(cat => cat.slug === slugFromUrl)
+      return category ? `${category.name} Products` : 'All Products'
+    }
+    
+    return 'All Products'
+  }, [slugFromUrl, allCategories])
+
   const handleApplyFilters = useCallback(() => {
-    setShowFilterDrawer(false);
-    applyApiFilters();
-  }, [applyApiFilters]);
+    setShowFilterDrawer(false)
+    applyApiFilters()
+  }, [applyApiFilters])
 
   const handlePriceChange = useCallback((values) => {
-    setPriceRange(values);
-  }, []);
-
-  const handleLowPriceChange = useCallback((value) => {
-    const numValue = Math.min(Number(value), priceRange[1] - 1);
-    setPriceRange([numValue, priceRange[1]]);
-  }, [priceRange]);
-
-  const handleHighPriceChange = useCallback((value) => {
-    const numValue = Math.max(Number(value), priceRange[0] + 1);
-    setPriceRange([priceRange[0], numValue]);
-  }, [priceRange]);
+    setPriceRange(values)
+  }, [])
 
   const toggleBrand = useCallback((brand) => {
     setSelectedBrands(prev =>
@@ -755,9 +757,12 @@ const SeeAllProducts = () => {
     setRatingFilter(0)
     setAvailability('all')
     setSearchQuery('')
-    setActiveCategory('All')
     setSortBy('popular')
-  }, [])
+    
+    if (!slugFromUrl) {
+      setActiveCategory('All')
+    }
+  }, [slugFromUrl])
 
   const getActiveFilterCount = useCallback(() => {
     let count = 0
@@ -768,10 +773,15 @@ const SeeAllProducts = () => {
     if (ratingFilter > 0) count++
     if (availability !== 'all') count++
     if (searchQuery.trim()) count++
-    if (activeCategory !== 'All') count++
     if (sortBy !== 'popular') count++
+    
+    if (slugFromUrl && activeCategory !== 'All') {
+    } else if (activeCategory !== 'All') {
+      count++
+    }
+    
     return count
-  }, [priceRange, selectedBrands, selectedSizes, selectedColors, ratingFilter, availability, searchQuery, activeCategory, sortBy])
+  }, [priceRange, selectedBrands, selectedSizes, selectedColors, ratingFilter, availability, searchQuery, activeCategory, sortBy, slugFromUrl])
 
   const getColorValue = useCallback((color) => {
     const colorMap = {
@@ -815,7 +825,6 @@ const SeeAllProducts = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
@@ -823,13 +832,12 @@ const SeeAllProducts = () => {
           >
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.title}>All Products</Text>
+          <Text style={styles.title}>{getPageTitle()}</Text>
           <TouchableOpacity style={styles.cartButton}>
             <Ionicons name="cart-outline" size={22} color="#000" />
           </TouchableOpacity>
         </View>
 
-        {/* Search Bar */}
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
           <TextInput
@@ -848,7 +856,6 @@ const SeeAllProducts = () => {
           ) : null}
         </View>
 
-        {/* Quick Actions Bar */}
         <View style={styles.actionsBar}>
           <ScrollView 
             horizontal 
@@ -856,37 +863,45 @@ const SeeAllProducts = () => {
             style={styles.categoriesContainer}
             contentContainerStyle={styles.categoriesContent}
           >
-            <TouchableOpacity
-              style={[
-                styles.categoryTab,
-                activeCategory === 'All' && styles.activeCategoryTab
-              ]}
-              onPress={() => setActiveCategory('All')}
-            >
-              <Text style={[
-                styles.categoryTabText,
-                activeCategory === 'All' && styles.activeCategoryTabText
-              ]}>
-                All
-              </Text>
-            </TouchableOpacity>
-            {allCategories?.map((category) => (
+            {!slugFromUrl && (
               <TouchableOpacity
-                key={category?._id}
                 style={[
                   styles.categoryTab,
-                  activeCategory === category.name && styles.activeCategoryTab
+                  activeCategory === 'All' && styles.activeCategoryTab
                 ]}
-                onPress={() => onCategoryPress(category.name)}
+                onPress={() => setActiveCategory('All')}
               >
                 <Text style={[
                   styles.categoryTabText,
-                  activeCategory === category.name && styles.activeCategoryTabText
+                  activeCategory === 'All' && styles.activeCategoryTabText
                 ]}>
-                  {category?.name}
+                  All
                 </Text>
               </TouchableOpacity>
-            ))}
+            )}
+
+            {allCategories?.data?.map((category, idx) => {
+              const name = category?.name ?? `Category ${idx}`
+              const key = category?._id ?? `${name}-${idx}`
+
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[
+                    styles.categoryTab,
+                    activeCategory === name && styles.activeCategoryTab
+                  ]}
+                  onPress={() => onCategoryPress(name)}
+                >
+                  <Text style={[
+                    styles.categoryTabText,
+                    activeCategory === name && styles.activeCategoryTabText
+                  ]}>
+                    {name}
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
           </ScrollView>
 
           <TouchableOpacity 
@@ -902,7 +917,6 @@ const SeeAllProducts = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Sort Options */}
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
@@ -934,7 +948,6 @@ const SeeAllProducts = () => {
           ))}
         </ScrollView>
 
-        {/* Results Count */}
         <View style={styles.resultsContainer}>
           <Text style={styles.resultsText}>
             {(isLoading || isFetching) ? 'Loading products...' : `${filteredProducts.length} products found`}
@@ -947,7 +960,6 @@ const SeeAllProducts = () => {
           )}
         </View>
 
-        {/* Products Grid */}
         {(isLoading || isFetching) && filteredProducts.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#004CFF" />
@@ -975,13 +987,10 @@ const SeeAllProducts = () => {
           />
         )}
 
-        {/* Filter Drawer (memoized component) */}
         <FilterDrawer
           visible={showFilterDrawer}
           onClose={() => setShowFilterDrawer(false)}
           priceRange={priceRange}
-          handleLowPriceChange={handleLowPriceChange}
-          handleHighPriceChange={handleHighPriceChange}
           handlePriceChange={handlePriceChange}
           selectedBrands={selectedBrands}
           toggleBrand={toggleBrand}
@@ -1006,6 +1015,7 @@ const SeeAllProducts = () => {
     </SafeAreaView>
   )
 }
+
 
 /* Add these new styles to your existing styles object */
 const styles = StyleSheet.create({
