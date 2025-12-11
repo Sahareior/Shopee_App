@@ -3,19 +3,24 @@ import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { useGetCartsQuery, useGetWishListsQuery } from '../redux/slices/jsonApiSlice'
+import { useGetCartsQuery, useGetRecentViewedQuery, useGetWishListsQuery } from '../redux/slices/jsonApiSlice'
 import { useDeleteCartTool, useUpdateCartTool } from '../tools/useAddToCartTool'
+import RecentlyViewed from '../home/Homepage/RecentlyViewed'
+import NewView from '../home/Homepage/viewAllComponents/NewView'
 
 const { width: screenWidth } = Dimensions.get('window')
 
 const Cart = () => {
-  const { data: cartApiData, isLoading, error,refetch:cartRefetch } = useGetCartsQuery('691f393838bceee55ce53ee5')
-  const { data: wishlistApiData, isLoading: wishlistLoading, error: wishlistError } = useGetWishListsQuery('693103eec8c1629ff4515f09')
+  const { data: cartApiData, isLoading, error,refetch:cartRefetch } = useGetCartsQuery()
+  const { data: wishlistApiData, isLoading: wishlistLoading, error: wishlistError } = useGetWishListsQuery()
+  const {data:recentView} = useGetRecentViewedQuery()
   const [cartItems, setCartItems] = useState([])
     const { updateToCart } = useUpdateCartTool();
     const {deleteFromCart} = useDeleteCartTool();
 
   const router = useRouter()
+
+  console.log('recentView', recentView)
 
   // Transform API data when it loads
   useEffect(() => {
@@ -239,6 +244,8 @@ const Cart = () => {
             </View>
           </View>
         )}
+
+        <NewView data={recentView} />
 
         {/* Order Summary */}
         {cartItems.length > 0 && (

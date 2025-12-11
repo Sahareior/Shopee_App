@@ -20,7 +20,8 @@ import bubble from '../../assets/images/bubble.png'
 import camera from '../../assets/images/camere.png'
 import { Image } from 'expo-image'
 import { useSignUpMutation } from '../redux/slices/jsonApiSlice'
-// import { setCredentials } from '../redux/slices/authSlice'
+import MaskedView from "@react-native-masked-view/masked-view";
+import { LinearGradient } from "expo-linear-gradient";
 import {setCredentials} from '../redux/slices/authSlice'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
@@ -72,9 +73,9 @@ const CreateAccount = () => {
       await AsyncStorage.setItem('authUser', JSON.stringify(res.user));
       
          if(res?.user?.firstLogin === true){
-    router.push('/home/home-slider');
+    router.replace('/home/home-slider');
    }else{
-    router.push('/(tabs)/home');
+    router.replace('/(tabs)/home');
    }
       // Store user data in Redux (assuming response has user and token)
       dispatch(setCredentials({
@@ -117,8 +118,48 @@ const CreateAccount = () => {
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.headerTextContainer}>
-                <Text style={styles.headerText}>Create</Text>
-                <Text style={styles.headerText}>Account</Text>
+<View style={{ gap: -15, marginTop: 50 }}>
+  {/* CREATE */}
+  <MaskedView
+    style={{ height: 80 }}
+    maskElement={
+      <View style={{ justifyContent: "flex-start", alignItems: "flex-start" }}>
+        <Text style={[styles.title, { backgroundColor: "transparent" }]}>
+          Create
+        </Text>
+      </View>
+    }
+  >
+    <LinearGradient
+      colors={["#00FFA3", "#00D1FF", "#7A5CFF", "#FF4F9A"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ width: "100%", height: 80 }}
+    />
+  </MaskedView>
+
+  {/* ACCOUNT */}
+  <MaskedView
+    style={{ height: 80 }}
+    maskElement={
+      <View style={{ justifyContent: "flex-start", alignItems: "flex-start" }}>
+        <Text style={[styles.title, { backgroundColor: "transparent" }]}>
+          Account
+        </Text>
+      </View>
+    }
+  >
+    <LinearGradient
+      colors={["#00FFA3", "#00D1FF", "#7A5CFF", "#FF4F9A"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ width: "100%", height: 80 }}
+    />
+  </MaskedView>
+</View>
+
+
+               
               </View>
 
               <Image
@@ -236,6 +277,16 @@ const styles = StyleSheet.create({
     height: 250,
     opacity: 0.8,
   },
+   title: {
+    fontSize: 48,
+    fontWeight: "800",
+    letterSpacing: -1,
+    color: "transparent",
+  },
+     gradientBox: {
+  padding: 16,
+  borderRadius: 12,
+},
   imageContainer: {
     alignItems: 'stretch',
     marginTop: 10,
@@ -268,7 +319,7 @@ const styles = StyleSheet.create({
     paddingHorizontal:10
   },
   primaryButton: {
-    backgroundColor: '#004CFF',
+    backgroundColor: '#e78397',
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',

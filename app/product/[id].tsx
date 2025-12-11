@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
 
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useGetProductByIdQuery } from '../redux/slices/jsonApiSlice';
+import { useGetProductByIdQuery, useGetRecentViewedQuery, usePostRecentViewedMutation } from '../redux/slices/jsonApiSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAddToCartTool, useAddToWishlistTool, useUpdateCartTool } from '../tools/useAddToCartTool';
 
@@ -305,6 +305,8 @@ const ProductDetailScreen = () => {
 
   
   const { data: product, isLoading, error, refetch } = useGetProductByIdQuery(id);
+  const {data:recentView, refetch:recentRefetch} = useGetRecentViewedQuery()
+  const [postRecentViewed] = usePostRecentViewedMutation()
   
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariation, setSelectedVariation] = useState(null);
@@ -321,8 +323,18 @@ const ProductDetailScreen = () => {
   const selectedSize = selectedVariation?.size;
   const selectedStock = selectedVariation?.stock || 0;
 
+
+  useEffect(()=> {
+     const start = async () => {
+      const res = await postRecentViewed({productId:id})
+      recentRefetch()
+     }
+     start()
+  },[id])
+
   // Set default variation
   React.useEffect(() => {
+   
     if (product?.variations?.length) {
       const defaultVariation = product.variations.find(v => v.stock > 0) || product.variations[0];
       setSelectedVariation(defaultVariation);

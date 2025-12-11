@@ -5,15 +5,15 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Modal,
-    Image as RNImage,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Dimensions,
+  Modal,
+  Image as RNImage,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -318,9 +318,11 @@ const renderTextOverlays = (overlays, containerWidth, containerHeight, storyData
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.title}>{from === 'home' ? 'Top Products' : 'Stories'}</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAllText}>See All</Text>
-          </TouchableOpacity>
+          {from === 'home' && (
+            <TouchableOpacity onPress={() => router.push('/products/recently-viewed')}>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {isLoading ? (

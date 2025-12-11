@@ -18,6 +18,8 @@ import { useDispatch } from 'react-redux';
 import { setCredentials } from '../redux/slices/authSlice'; // adjust path if needed
 import bub1 from '../../assets/images/b1.png'
 import bub2 from '../../assets/images/b2.png'
+import MaskedView from "@react-native-masked-view/masked-view";
+import { LinearGradient } from "expo-linear-gradient";
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useSignInMutation } from '../redux/slices/jsonApiSlice';
@@ -83,9 +85,9 @@ const handleLogin = async () => {
 
     // navigate
    if(user?.firstLogin === true){
-    router.push('/home/home-slider');
+    router.replace('/home/home-slider');
    }else{
-    router.push('/(tabs)/home');
+    router.replace('/(tabs)/home');
    }
 
   } catch (err) {
@@ -121,7 +123,32 @@ const handleLogin = async () => {
             </View>
             
             <View style={styles.contentContainer}>
-              <Text style={styles.title}>Login</Text>
+            <MaskedView
+              style={{ height: 80, justifyContent: "center" }} 
+              maskElement={
+                <View style={{ justifyContent: "center", alignItems: "center" }}>
+                  <Text
+                    style={[
+                      styles.title,
+                      { color: "black", backgroundColor: "transparent" },
+                    ]}
+                  >
+                    Login
+                  </Text>
+                </View>
+              }
+            >
+              <LinearGradient
+                colors={["#00FFA3", "#00D1FF", "#7A5CFF", "#FF4F9A"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  width: 300,   // 👈 Gradient must fully cover the text width
+                  height: 80,   // 👈 Same as mask height
+                }}
+              />
+            </MaskedView>
+
               <Text style={styles.subtitle}>Good to see you back!</Text>
               
               <View style={styles.formContainer}>
@@ -198,7 +225,7 @@ const styles = StyleSheet.create({
         height: 250,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 20,
+        marginTop: 1,
     },
     image1: {
         width: '60%',
@@ -246,7 +273,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f9f9f9',
     },
     loginButton: {
-        backgroundColor: '#004CFF',
+        backgroundColor: '#e78397',
         paddingVertical: 15,
         borderRadius: 8,
         alignItems: 'center',
@@ -263,7 +290,7 @@ const styles = StyleSheet.create({
     },
     forgotPasswordText: {
         fontSize: 14,
-        color: '#004CFF',
+        color: '#cc280bff',
         textDecorationLine: 'underline',
     },
     disabledButton: {
@@ -277,6 +304,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ddd',
     },
+      gradientBox: {
+  padding: 16,
+  borderRadius: 12,
+},
     debugTitle: {
         fontSize: 14,
         fontWeight: 'bold',

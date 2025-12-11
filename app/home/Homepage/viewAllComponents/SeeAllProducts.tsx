@@ -1,9 +1,9 @@
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  ScrollView, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
   TextInput,
   FlatList,
   Modal,
@@ -18,9 +18,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useGetAllProductsQuery, useGetCategoriesQuery, useLazyGetProductsByFilterQuery } from '@/app/redux/slices/jsonApiSlice'
 import Slider from '@react-native-community/slider'
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-
 /* ---------------------------
    Memoized ProductCard
    --------------------------- */
@@ -28,23 +26,21 @@ const ProductCard = React.memo(({ item, onPress }) => {
   const imageUrl = item.images && item.images.length > 0 ? item.images[0] : null
   const currentPrice = item.discountPrice || item.price
   const originalPrice = item.discountPrice ? item.price : null
-  const discountPercent = originalPrice 
+  const discountPercent = originalPrice
     ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
     : 0
-
   const inStock = item.variations?.some(variation => variation.stock > 0)
   const isNew = item.labels?.includes('new_item')
   const isTrending = item.labels?.includes('top_product') || item.labels?.includes('flash_deal')
-
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.productCard}
       onPress={onPress}
     >
       <View style={styles.productImageContainer}>
         {imageUrl ? (
-          <Image 
-            source={{ uri: imageUrl }} 
+          <Image
+            source={{ uri: imageUrl }}
             style={styles.productImage}
             contentFit="cover"
           />
@@ -71,24 +67,24 @@ const ProductCard = React.memo(({ item, onPress }) => {
           </View>
         )}
       </View>
-      
+     
       <View style={styles.productInfo}>
         <Text style={styles.productBrand}>{item.brand || 'Unknown Brand'}</Text>
         <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-        
+       
         <View style={styles.ratingContainer}>
           <Ionicons name="star" size={14} color="#FFD700" />
           <Text style={styles.ratingText}>{(item.rating || 0).toFixed(1)}</Text>
           <Text style={styles.reviewsText}>({item.reviews || 0})</Text>
         </View>
-        
+       
         <View style={styles.priceContainer}>
           <Text style={styles.currentPrice}>${currentPrice}</Text>
           {originalPrice && originalPrice > currentPrice && (
             <Text style={styles.originalPrice}>${originalPrice}</Text>
           )}
         </View>
-        
+       
         {discountPercent > 0 && (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>
@@ -96,7 +92,6 @@ const ProductCard = React.memo(({ item, onPress }) => {
             </Text>
           </View>
         )}
-
         <View style={styles.deliveryInfo}>
           <View style={styles.deliveryTag}>
             <Ionicons name="flash" size={12} color="#004CFF" />
@@ -107,7 +102,6 @@ const ProductCard = React.memo(({ item, onPress }) => {
     </TouchableOpacity>
   )
 })
-
 /* ---------------------------
    Memoized Filter Drawer Component
    --------------------------- */
@@ -136,7 +130,6 @@ const FilterDrawer = React.memo(({
   isLoadingMetadata
 }) => {
   const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current
-
   useEffect(() => {
     if (visible) {
       Animated.timing(slideAnim, {
@@ -152,14 +145,12 @@ const FilterDrawer = React.memo(({
       }).start()
     }
   }, [visible, slideAnim])
-
   const FilterSectionLoader = () => (
     <View style={styles.loadingFilterSection}>
       <ActivityIndicator size="small" color="#004CFF" />
       <Text style={styles.loadingFilterText}>Loading options...</Text>
     </View>
   )
-
   return (
     <Modal
       visible={visible}
@@ -168,11 +159,11 @@ const FilterDrawer = React.memo(({
       onRequestClose={onClose}
     >
       <View style={styles.drawerOverlay}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.drawerBackdrop}
           onPress={onClose}
         />
-        <Animated.View 
+        <Animated.View
           style={[
             styles.filterDrawer,
             { transform: [{ translateX: slideAnim }] }
@@ -180,14 +171,13 @@ const FilterDrawer = React.memo(({
         >
           <View style={styles.drawerHeader}>
             <Text style={styles.drawerTitle}>Filters</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeButton}
               onPress={onClose}
             >
               <Ionicons name="close" size={24} color="#000" />
             </TouchableOpacity>
           </View>
-
           <ScrollView style={styles.filterContent} showsVerticalScrollIndicator={false}>
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Price Range</Text>
@@ -210,7 +200,6 @@ const FilterDrawer = React.memo(({
                 />
               </View>
             </View>
-
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Brands</Text>
               {isLoadingMetadata ? (
@@ -239,7 +228,6 @@ const FilterDrawer = React.memo(({
                 </View>
               )}
             </View>
-
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Sizes</Text>
               {isLoadingMetadata ? (
@@ -268,7 +256,6 @@ const FilterDrawer = React.memo(({
                 </View>
               )}
             </View>
-
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Colors</Text>
               {isLoadingMetadata ? (
@@ -295,7 +282,6 @@ const FilterDrawer = React.memo(({
                 </View>
               )}
             </View>
-
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Customer Rating</Text>
               <View style={styles.ratingFilterContainer}>
@@ -323,7 +309,6 @@ const FilterDrawer = React.memo(({
                 ))}
               </View>
             </View>
-
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Availability</Text>
               <View style={styles.availabilityContainer}>
@@ -354,15 +339,14 @@ const FilterDrawer = React.memo(({
               </View>
             </View>
           </ScrollView>
-
           <View style={styles.drawerFooter}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.clearFiltersButton}
               onPress={clearAllFilters}
             >
               <Text style={styles.clearFiltersText}>Clear All</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.applyFiltersButton}
               onPress={handleApplyFilters}
             >
@@ -375,7 +359,6 @@ const FilterDrawer = React.memo(({
     </Modal>
   )
 })
-
 /* ---------------------------
    Main SeeAllProducts Component
    --------------------------- */
@@ -385,16 +368,15 @@ const SeeAllProducts = () => {
   const {data: allCategories} = useGetCategoriesQuery()
   const {data: allPro} = useGetAllProductsQuery()
   const [trigger, { data: filterResponse, isLoading, isFetching }] = useLazyGetProductsByFilterQuery()
-  
+ 
   const slugFromUrl = params.slug || ''
   console.log('Slug from URL:', slugFromUrl)
-  
+ 
   const getInitialCategory = useCallback(() => {
     if (!slugFromUrl || !allCategories?.data) return 'All'
     const categoryFromSlug = allCategories.data.find(cat => cat.slug === slugFromUrl)
     return categoryFromSlug?.name || 'All'
   }, [slugFromUrl, allCategories])
-
   const [activeCategory, setActiveCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('popular')
@@ -406,16 +388,15 @@ const SeeAllProducts = () => {
     sizes: [],
     colors: []
   })
-  
+ 
   const [priceRange, setPriceRange] = useState([0, 2500])
   const [selectedBrands, setSelectedBrands] = useState([])
   const [selectedSizes, setSelectedSizes] = useState([])
   const [selectedColors, setSelectedColors] = useState([])
   const [ratingFilter, setRatingFilter] = useState(0)
   const [availability, setAvailability] = useState('all')
-  
+ 
   const searchTimeoutRef = useRef(null)
-
   // Initialize category from slug
   useEffect(() => {
     if (allCategories?.data && slugFromUrl) {
@@ -424,16 +405,15 @@ const SeeAllProducts = () => {
       setActiveCategory(initialCategory)
     }
   }, [allCategories, slugFromUrl, getInitialCategory])
-
   // Initialize products
   useEffect(() => {
     if (allPro && allPro.length > 0) {
       setProducts(allPro)
-      
+     
       if (slugFromUrl && allCategories?.data) {
         const categoryFromSlug = allCategories.data.find(cat => cat.slug === slugFromUrl)
         if (categoryFromSlug) {
-          const filteredByCategory = allPro.filter(product => 
+          const filteredByCategory = allPro.filter(product =>
             product.categoryId?.name === categoryFromSlug.name
           )
           setFilteredProducts(filteredByCategory)
@@ -443,7 +423,7 @@ const SeeAllProducts = () => {
       } else {
         setFilteredProducts(allPro)
       }
-      
+     
       const b = new Set()
       const s = new Set()
       const c = new Set()
@@ -463,7 +443,6 @@ const SeeAllProducts = () => {
       })
     }
   }, [allPro, slugFromUrl, allCategories])
-
   useEffect(() => {
     if (filterResponse) {
       if (filterResponse.metadata) {
@@ -495,19 +474,17 @@ const SeeAllProducts = () => {
       }
     }
   }, [filterResponse])
-
   const sortOptions = [
-    { label: 'All', value: 'All', icon: 'flame' },
+    { label: 'Popular', value: 'popular', icon: 'flame' },
     { label: 'Newest', value: 'newest', icon: 'time' },
-    { label: 'Price: Low to High', value: 'price:asc', icon: 'arrow-up' },
-    { label: 'Price: High to Low', value: 'price:desc', icon: 'arrow-down' },
-    { label: 'Rating', value: 'rating:desc', icon: 'star' },
-    { label: 'Most Reviewed', value: 'reviews', icon: 'chatbubble' }
+    { label: 'Price: Low to High', value: 'price_low_high', icon: 'arrow-up' },
+    { label: 'Price: High to Low', value: 'price_high_low', icon: 'arrow-down' },
+    { label: 'Rating', value: 'rating', icon: 'star' },
+    { label: 'Most Reviewed', value: 'most_reviewed', icon: 'chatbubble' }
   ]
-
   const buildApiFilters = useCallback(() => {
     const filters = {}
-    
+   
     // Category filter
     if (activeCategory !== 'All') {
       const selectedCategory = allCategories?.data?.find(cat => cat.name === activeCategory)
@@ -515,76 +492,74 @@ const SeeAllProducts = () => {
         filters.category = selectedCategory._id
       }
     }
-    
+   
     // Search filter
     if (searchQuery.trim()) {
       filters.search = searchQuery.trim()
     }
-    
+   
     // Price range filter
     if (priceRange[0] > 0 || priceRange[1] < 2500) {
       filters.minPrice = priceRange[0]
       filters.maxPrice = priceRange[1]
     }
-    
+   
     // Brands filter
     if (selectedBrands.length > 0) {
       filters.brand = selectedBrands
     }
-    
+   
     // Sizes filter
     if (selectedSizes.length > 0) {
       filters.size = selectedSizes
     }
-    
+   
     // Colors filter
     if (selectedColors.length > 0) {
       filters.color = selectedColors
     }
-    
+   
     // Rating filter
     if (ratingFilter > 0) {
       filters.rating = ratingFilter
     }
-    
+   
     // Availability filter
     if (availability === 'inStock') {
       filters.inStock = true
     }
-    
+   
     // Sorting
     if (sortBy === 'newest') {
       filters.sortBy = 'createdAt:desc'
     } else if (sortBy !== 'popular') {
       filters.sortBy = sortBy
     }
-    
+   
     return filters
   }, [activeCategory, allCategories, searchQuery, priceRange, selectedBrands, selectedSizes, selectedColors, ratingFilter, availability, sortBy])
-
   const applyApiFilters = useCallback(async () => {
     const filters = buildApiFilters()
-    
+   
     if (Object.keys(filters).length === 0 && !searchQuery.trim()) {
       if (slugFromUrl && allCategories?.data && allPro) {
         const categoryFromSlug = allCategories.data.find(cat => cat.slug === slugFromUrl)
         if (categoryFromSlug) {
-          const filteredByCategory = allPro.filter(product => 
+          const filteredByCategory = allPro.filter(product =>
             product.categoryId?.name === categoryFromSlug.name
           )
           setFilteredProducts(filteredByCategory)
           return
         }
       }
-      
+     
       if (allPro && allPro.length > 0) {
         setFilteredProducts(allPro)
       }
       return
     }
-
     console.log('Applying API filters:', filters)
-    
+   
     try {
       const result = await trigger(filters).unwrap()
       if (result && !result.metadata) {
@@ -595,16 +570,13 @@ const SeeAllProducts = () => {
       fallbackLocalFiltering()
     }
   }, [buildApiFilters, trigger, allPro, searchQuery, slugFromUrl, allCategories])
-
   const fallbackLocalFiltering = useCallback(() => {
     let filtered = [...products]
-
     if (activeCategory !== 'All') {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.categoryId?.name === activeCategory
       )
     }
-
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(product =>
@@ -614,56 +586,52 @@ const SeeAllProducts = () => {
         product.description?.toLowerCase().includes(query)
       )
     }
-
     filtered = filtered.filter(product => {
       const price = product.discountPrice || product.price
       return price >= priceRange[0] && price <= priceRange[1]
     })
-
     if (selectedBrands.length > 0) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.brand && selectedBrands.includes(product.brand)
       )
     }
-
     if (selectedSizes.length > 0) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.variations?.some(variation => selectedSizes.includes(variation.size))
       )
     }
-
     if (selectedColors.length > 0) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.variations?.some(variation => selectedColors.includes(variation.color))
       )
     }
-
     if (ratingFilter > 0) {
       filtered = filtered.filter(product => product.rating >= ratingFilter)
     }
-
     if (availability === 'inStock') {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.variations?.some(variation => variation.stock > 0)
       )
     }
-
     switch (sortBy) {
       case 'newest':
         filtered = filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
         break
       case 'price:asc':
-        filtered = filtered.sort((a, b) => 
+        filtered = filtered.sort((a, b) =>
           (a.discountPrice || a.price) - (b.discountPrice || b.price)
         )
         break
       case 'price:desc':
-        filtered = filtered.sort((a, b) => 
+        filtered = filtered.sort((a, b) =>
           (b.discountPrice || b.price) - (a.discountPrice || a.price)
         )
         break
       case 'rating:desc':
         filtered = filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        break
+      case 'reviews:desc':
+        filtered = filtered.sort((a, b) => (b.reviews || 0) - (a.reviews || 0))
         break
       case 'popular':
       default:
@@ -674,57 +642,51 @@ const SeeAllProducts = () => {
         })
         break
     }
-
     setFilteredProducts(filtered)
   }, [products, activeCategory, searchQuery, priceRange, selectedBrands, selectedSizes, selectedColors, ratingFilter, availability, sortBy])
-
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current)
     }
-    
+   
     searchTimeoutRef.current = setTimeout(() => {
       applyApiFilters()
     }, 500)
-    
+   
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current)
       }
     }
   }, [
-    activeCategory, 
-    searchQuery, 
-    sortBy, 
-    priceRange, 
-    selectedBrands, 
-    selectedSizes, 
-    selectedColors, 
-    ratingFilter, 
+    activeCategory,
+    searchQuery,
+    sortBy,
+    priceRange,
+    selectedBrands,
+    selectedSizes,
+    selectedColors,
+    ratingFilter,
     availability,
     applyApiFilters
   ])
-
   const getPageTitle = useCallback(() => {
     if (!slugFromUrl) return 'All Products'
-    
+   
     if (allCategories?.data) {
       const category = allCategories.data.find(cat => cat.slug === slugFromUrl)
       return category ? `${category.name} Products` : 'All Products'
     }
-    
+   
     return 'All Products'
   }, [slugFromUrl, allCategories])
-
   const handleApplyFilters = useCallback(() => {
     setShowFilterDrawer(false)
     applyApiFilters()
   }, [applyApiFilters])
-
   const handlePriceChange = useCallback((values) => {
     setPriceRange(values)
   }, [])
-
   const toggleBrand = useCallback((brand) => {
     setSelectedBrands(prev =>
       prev.includes(brand)
@@ -732,7 +694,6 @@ const SeeAllProducts = () => {
         : [...prev, brand]
     )
   }, [])
-
   const toggleSize = useCallback((size) => {
     setSelectedSizes(prev =>
       prev.includes(size)
@@ -740,7 +701,6 @@ const SeeAllProducts = () => {
         : [...prev, size]
     )
   }, [])
-
   const toggleColor = useCallback((color) => {
     setSelectedColors(prev =>
       prev.includes(color)
@@ -748,7 +708,6 @@ const SeeAllProducts = () => {
         : [...prev, color]
     )
   }, [])
-
   const clearAllFilters = useCallback(() => {
     setPriceRange([0, 2500])
     setSelectedBrands([])
@@ -758,12 +717,11 @@ const SeeAllProducts = () => {
     setAvailability('all')
     setSearchQuery('')
     setSortBy('popular')
-    
+   
     if (!slugFromUrl) {
       setActiveCategory('All')
     }
   }, [slugFromUrl])
-
   const getActiveFilterCount = useCallback(() => {
     let count = 0
     if (priceRange[0] > 0 || priceRange[1] < 2500) count++
@@ -774,15 +732,14 @@ const SeeAllProducts = () => {
     if (availability !== 'all') count++
     if (searchQuery.trim()) count++
     if (sortBy !== 'popular') count++
-    
+   
     if (slugFromUrl && activeCategory !== 'All') {
     } else if (activeCategory !== 'All') {
       count++
     }
-    
+   
     return count
   }, [priceRange, selectedBrands, selectedSizes, selectedColors, ratingFilter, availability, searchQuery, activeCategory, sortBy, slugFromUrl])
-
   const getColorValue = useCallback((color) => {
     const colorMap = {
       'White': '#FFFFFF',
@@ -810,23 +767,20 @@ const SeeAllProducts = () => {
     }
     return colorMap[color] || '#CCCCCC'
   }, [])
-
   const renderProductItem = useCallback(({ item }) => (
-    <ProductCard 
-      item={item} 
-      onPress={() => router.push(`/product/${item._id}`)} 
+    <ProductCard
+      item={item}
+      onPress={() => router.push(`/product/${item._id}`)}
     />
   ), [router])
-
   const onCategoryPress = useCallback((categoryName) => {
     setActiveCategory(categoryName)
   }, [])
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
           >
@@ -837,7 +791,6 @@ const SeeAllProducts = () => {
             <Ionicons name="cart-outline" size={22} color="#000" />
           </TouchableOpacity>
         </View>
-
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
           <TextInput
@@ -855,10 +808,9 @@ const SeeAllProducts = () => {
             </TouchableOpacity>
           ) : null}
         </View>
-
         <View style={styles.actionsBar}>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.categoriesContainer}
             contentContainerStyle={styles.categoriesContent}
@@ -879,11 +831,9 @@ const SeeAllProducts = () => {
                 </Text>
               </TouchableOpacity>
             )}
-
             {allCategories?.data?.map((category, idx) => {
               const name = category?.name ?? `Category ${idx}`
               const key = category?._id ?? `${name}-${idx}`
-
               return (
                 <TouchableOpacity
                   key={key}
@@ -903,8 +853,7 @@ const SeeAllProducts = () => {
               )
             })}
           </ScrollView>
-
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.filterButton}
             onPress={() => setShowFilterDrawer(true)}
           >
@@ -916,9 +865,8 @@ const SeeAllProducts = () => {
             )}
           </TouchableOpacity>
         </View>
-
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.sortContainer}
           contentContainerStyle={styles.sortContent}
@@ -933,10 +881,10 @@ const SeeAllProducts = () => {
               onPress={() => setSortBy(option.value)}
               disabled={isLoading || isFetching}
             >
-              <Ionicons 
-                name={option.icon} 
-                size={16} 
-                color={sortBy === option.value ? '#fff' : '#666'} 
+              <Ionicons
+                name={option.icon}
+                size={16}
+                color={sortBy === option.value ? '#fff' : '#666'}
               />
               <Text style={[
                 styles.sortTabText,
@@ -947,7 +895,6 @@ const SeeAllProducts = () => {
             </TouchableOpacity>
           ))}
         </ScrollView>
-
         <View style={styles.resultsContainer}>
           <Text style={styles.resultsText}>
             {(isLoading || isFetching) ? 'Loading products...' : `${filteredProducts.length} products found`}
@@ -959,7 +906,6 @@ const SeeAllProducts = () => {
             </Text>
           )}
         </View>
-
         {(isLoading || isFetching) && filteredProducts.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#004CFF" />
@@ -986,7 +932,6 @@ const SeeAllProducts = () => {
             extraData={filteredProducts.length}
           />
         )}
-
         <FilterDrawer
           visible={showFilterDrawer}
           onClose={() => setShowFilterDrawer(false)}
@@ -1015,12 +960,10 @@ const SeeAllProducts = () => {
     </SafeAreaView>
   )
 }
-
-
 /* Add these new styles to your existing styles object */
 const styles = StyleSheet.create({
   // ... (all your existing styles remain the same)
-  
+ 
   // Add these new styles:
   loadingFilterSection: {
     flexDirection: 'row',
@@ -1028,13 +971,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
-  
+ 
   loadingFilterText: {
     fontSize: 14,
     color: '#666',
     marginLeft: 10,
   },
-  
+ 
   noOptionsText: {
     fontSize: 14,
     color: '#999',
@@ -1042,14 +985,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: 20,
   },
-  
+ 
   metadataInfo: {
     fontSize: 12,
     color: '#666',
     marginTop: 4,
     fontStyle: 'italic',
   },
-  
+ 
   // Keep all your existing styles as they were
   safeArea: {
     flex: 1,
@@ -1600,5 +1543,4 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
 })
-
 export default SeeAllProducts

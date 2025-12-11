@@ -142,7 +142,7 @@ const ProfileHeader = () => {
       {/* Header Section */}
       <View style={styles.header}>
         <View style={styles.headingContainer}>
-          <Text style={styles.greeting}>Hello, John! 👋</Text>
+          <Text style={styles.greeting}>Hello,Sahareior 👋</Text>
           <TouchableOpacity style={styles.notificationButton}>
             <Ionicons name="notifications-outline" size={24} color="#333" />
             <View style={styles.notificationBadge}>

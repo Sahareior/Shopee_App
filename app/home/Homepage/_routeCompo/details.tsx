@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import JustForYou from '../JustForYou'
+import { usePostRecentViewedMutation } from '@/app/redux/slices/jsonApiSlice'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
@@ -14,6 +15,7 @@ const Details = () => {
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [showOptionsDrawer, setShowOptionsDrawer] = useState(false)
   const [quantity, setQuantity] = useState(1)
+  const [postRecentViewed] = usePostRecentViewedMutation()
   
   const slideAnim = useRef(new Animated.Value(screenHeight)).current
 

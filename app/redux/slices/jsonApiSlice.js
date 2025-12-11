@@ -269,10 +269,18 @@ export const jsonApi = createApi({
       query: (id) => `/story/media/${id}`,
       providesTags: ['Story'],
     }),
+
+    postRecentViewed: builder.mutation({
+     query: (data) => ({
+        url: '/recent-view',
+        method: 'POST',
+        body: data,
+      }),
+    }),
     
     // Recent viewed
     getRecentViewed: builder.query({
-      query: (id) => `/recent-view/${id}`,
+      query: () => `/recent-view`,
     }),
     
     // Post endpoint (if needed)
@@ -340,6 +348,7 @@ export const {
   useLazyGetMediaByIdQuery,
   useGetRecentViewedQuery,
   useUpdateloginStatusQuery,  
+  usePostRecentViewedMutation,
   useLazyUpdateloginStatusQuery,
   useGetPostByIdQuery,
 } = jsonApi;
