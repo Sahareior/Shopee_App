@@ -20,7 +20,8 @@ const Cart = () => {
 
   const router = useRouter()
 
-  console.log('recentView', recentView)
+  console.log('wishData', wishlistApiData)
+  console.log('recent,view', recentView)
 
   // Transform API data when it loads
   useEffect(() => {
@@ -101,9 +102,7 @@ const Cart = () => {
  
   }
 
-  const removeFromWishlist = (itemId) => {
-   
-  }
+
 
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
@@ -232,20 +231,15 @@ const Cart = () => {
         {/* Wishlist Section */}
         {wishlistApiData?.data?.length > 0 && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>From Your Wishlist</Text>
-              <Text style={styles.sectionSubtitle}>Items you might want to add</Text>
-            </View>
+          
             
             <View style={{maxHeight: 300}} >
-          <ScrollView>
-            
-          </ScrollView>
+        <NewView head={'From Your Wishlist'} sub ={'Items you might want to add'} data={wishlistApiData} />
             </View>
           </View>
         )}
 
-        <NewView data={recentView} />
+        <NewView head={'Recently Viewed'} sub={'Recent products you explored'} data={recentView} />
 
         {/* Order Summary */}
         {cartItems.length > 0 && (
@@ -363,7 +357,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   section: {
-    padding: 10,
+    padding: 1,
+    paddingVertical:10,
+    paddingBottom:20,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },

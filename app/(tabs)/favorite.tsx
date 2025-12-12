@@ -95,27 +95,6 @@ const Wishlist = () => {
     )
   }
 
-  const handleClearAllWishlist = () => {
-    if (wishlistItems.length === 0) return
-    
-    Alert.alert(
-      "Clear All",
-      "Are you sure you want to remove all items from your wishlist?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Clear All", 
-          style: "destructive",
-          onPress: () => {
-            setWishlistItems([])
-            // Note: In production, you would need to call your clear all API here
-            // Example: await clearAllWishlistAPI()
-            // Then refetch: refetchWishlist()
-          }
-        }
-      ]
-    )
-  }
 
   const renderWishlistItem = ({ item }) => (
     <View style={styles.wishlistItem}>
