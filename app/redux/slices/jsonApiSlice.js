@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 // Create a custom base query with proper async token handling
 const baseQuery = fetchBaseQuery({
-  baseUrl: 'https://waters-processing-keen-roberts.trycloudflare.com',
+  baseUrl: 'http://localhost:8000',
   prepareHeaders: async (headers, { getState }) => {
     let token = null;
     
@@ -77,7 +77,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   // Handle network errors
   if (result.error && result.error.status === 'FETCH_ERROR') {
     console.error('🌐 Network error - check backend URL and connection');
-    console.log('Current baseUrl:', 'https://waters-processing-keen-roberts.trycloudflare.com');
+    console.log('Current baseUrl:', 'http://localhost:8000');
   }
   
   return result;
@@ -277,6 +277,18 @@ export const jsonApi = createApi({
         body: data,
       }),
     }),
+
+    postSocialPost: builder.mutation({
+      query:(data) => ({
+        url:'/social/create',
+        method:'POST',
+        body:data
+      })
+    }),
+
+    getNewsFeed: builder.query({
+      query: () => '/social/newsfeed'
+    }),
     
     // Recent viewed
     getRecentViewed: builder.query({
@@ -350,5 +362,7 @@ export const {
   useUpdateloginStatusQuery,  
   usePostRecentViewedMutation,
   useLazyUpdateloginStatusQuery,
+  useGetNewsFeedQuery,
+  usePostSocialPostMutation,
   useGetPostByIdQuery,
 } = jsonApi;

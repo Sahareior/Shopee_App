@@ -99,7 +99,7 @@ const loadStoryMedia = async (storyId) => {
       return null;
     }
 
-    const response = await fetch(`https://waters-processing-keen-roberts.trycloudflare.com/story/media/${storyId}`, {
+    const response = await fetch(`http://localhost:8000/story/media/${storyId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

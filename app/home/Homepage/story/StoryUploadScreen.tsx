@@ -27,6 +27,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // -------------------- Media Preview Component --------------------
 const MediaPreview = ({ mediaUri, mediaType, onRemove, imageDimensions }) => {
   const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH - 64); // padding 32 each side
+  
 
   const getMediaStyle = () => {
     if (!imageDimensions || mediaType === 'video') {
@@ -248,7 +249,7 @@ const loadRecentMedia = async () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation?.goBack()}>
+        <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={28} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Story</Text>
