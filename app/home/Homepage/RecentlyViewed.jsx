@@ -5,15 +5,15 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  Modal,
-  Image as RNImage,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Dimensions,
+    Modal,
+    Image as RNImage,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -99,7 +99,7 @@ const loadStoryMedia = async (storyId) => {
       return null;
     }
 
-    const response = await fetch(`http://localhost:8000/story/media/${storyId}`, {
+    const response = await fetch(`https://waters-processing-keen-roberts.trycloudflare.com/story/media/${storyId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

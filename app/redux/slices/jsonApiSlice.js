@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 // Create a custom base query with proper async token handling
 const baseQuery = fetchBaseQuery({
-  baseUrl: 'http://localhost:8000',
+  baseUrl: 'https://waters-processing-keen-roberts.trycloudflare.com',
   prepareHeaders: async (headers, { getState }) => {
     let token = null;
     
@@ -77,7 +77,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   // Handle network errors
   if (result.error && result.error.status === 'FETCH_ERROR') {
     console.error('🌐 Network error - check backend URL and connection');
-    console.log('Current baseUrl:', 'http://localhost:8000');
+    console.log('Current baseUrl:', 'https://waters-processing-keen-roberts.trycloudflare.com');
   }
   
   return result;

@@ -90,7 +90,21 @@ export default function NewsFeed() {
 
   useEffect(() => {
     if (demoData?.data?.posts) {
-      setPosts(demoData.data.posts);
+      console.log('Fetched posts:', demoData.data.posts.length);
+      // Process base64 media data
+      const processedPosts = demoData.data.posts.map(post => {
+        if (post.media && post.media.length > 0) {
+          const processedMedia = post.media.map(mediaItem => ({
+            ...mediaItem,
+            // Convert base64 to data URI properly
+            uri: mediaItem.base64,
+            mediaType: mediaItem.mediaType || 'image'
+          }));
+          return { ...post, media: processedMedia };
+        }
+        return post;
+      });
+      setPosts(processedPosts);
     }
   }, [demoData]);
 
@@ -98,10 +112,24 @@ export default function NewsFeed() {
     setPosts(posts.map(post => {
       if (post._id === postId) {
         const alreadyLiked = post.userLiked
+        const newLikeCount = alreadyLiked ? post.likeCount - 1 : post.likeCount + 1
+        
+        // Update reactionCounts as well for consistency
+        const newReactionCounts = { ...post.reactionCounts }
+        if (alreadyLiked) {
+          newReactionCounts.like = Math.max(0, newReactionCounts.like - 1)
+        } else {
+          newReactionCounts.like += 1
+        }
+        
+        const totalReactions = Object.values(newReactionCounts).reduce((a, b) => a + b, 0)
+        
         return {
           ...post,
           userLiked: !alreadyLiked,
-          likeCount: alreadyLiked ? post.likeCount - 1 : post.likeCount + 1,
+          likeCount: newLikeCount,
+          reactionCounts: newReactionCounts,
+          totalReactions: totalReactions,
           likes: alreadyLiked 
             ? post.likes.filter(id => id !== 'currentUser')
             : [...post.likes, 'currentUser']
@@ -117,6 +145,7 @@ export default function NewsFeed() {
         const updatedReactions = { ...post.reactions }
         const updatedCounts = { ...post.reactionCounts }
         
+        // Remove current user from all reactions first
         Object.keys(updatedReactions).forEach(type => {
           const index = updatedReactions[type].indexOf('currentUser')
           if (index > -1) {
@@ -125,6 +154,7 @@ export default function NewsFeed() {
           }
         })
         
+        // Add new reaction
         if (!updatedReactions[reactionType].includes('currentUser')) {
           updatedReactions[reactionType].push('currentUser')
           updatedCounts[reactionType] += 1
@@ -137,7 +167,8 @@ export default function NewsFeed() {
           reactions: updatedReactions,
           reactionCounts: updatedCounts,
           totalReactions,
-          userLiked: reactionType === 'like' && updatedReactions.like.includes('currentUser')
+          userLiked: reactionType === 'like' && updatedReactions.like.includes('currentUser'),
+          likeCount: updatedCounts.like // Keep likeCount in sync
         }
       }
       return post
@@ -157,7 +188,7 @@ export default function NewsFeed() {
   const handleShare = (post) => {
     Alert.alert(
       'Share Post',
-      `Share "${post.content.substring(0, 50)}..."?`,
+      `Share "${post.content?.substring(0, 50)}..."?`,
       [
         { text: 'Copy Link', onPress: () => console.log('Link copied') },
         { text: 'Share via...', onPress: () => console.log('Share via') },
@@ -173,12 +204,18 @@ export default function NewsFeed() {
   }
 
   const renderReactionSummary = (post) => {
-    const activeReactions = Object.entries(post.reactionCounts || {})
+    if (!post.reactionCounts) return null
+    
+    const activeReactions = Object.entries(post.reactionCounts)
       .filter(([_, count]) => count > 0)
       .map(([type, count]) => ({ type, count }))
       .sort((a, b) => b.count - a.count)
 
     if (activeReactions.length === 0) return null
+
+    const totalReactions = post.totalReactions || post.likeCount || 0
+    const commentCount = post.commentCount || 0
+    const shareCount = post.shareCount || 0
 
     return (
       <View style={styles.reactionSummary}>
@@ -189,17 +226,19 @@ export default function NewsFeed() {
             </View>
           ))}
         </View>
-        <Text style={styles.reactionCountText}>
-          {post.totalReactions || 0} reaction{(post.totalReactions || 0) !== 1 ? 's' : ''}
-        </Text>
-        {post.commentCount > 0 && (
-          <Text style={styles.commentCountText}>
-            • {post.commentCount} comment{post.commentCount !== 1 ? 's' : ''}
+        {totalReactions > 0 && (
+          <Text style={styles.reactionCountText}>
+            {totalReactions} reaction{totalReactions !== 1 ? 's' : ''}
           </Text>
         )}
-        {post.shareCount > 0 && (
+        {commentCount > 0 && (
+          <Text style={styles.commentCountText}>
+            {totalReactions > 0 ? ' • ' : ''}{commentCount} comment{commentCount !== 1 ? 's' : ''}
+          </Text>
+        )}
+        {shareCount > 0 && (
           <Text style={styles.shareCountText}>
-            • {post.shareCount} share{post.shareCount !== 1 ? 's' : ''}
+            {(totalReactions > 0 || commentCount > 0) ? ' • ' : ''}{shareCount} share{shareCount !== 1 ? 's' : ''}
           </Text>
         )}
       </View>
@@ -217,20 +256,19 @@ export default function NewsFeed() {
           onPress={() => console.log('View media')}
         >
           <Image 
-            source={{ uri: media[0].url }} 
+            source={{ uri: media[0].base64 || media[0].uri }} 
             style={[
               styles.mediaImage,
-              { aspectRatio: media[0].width / media[0].height || 1 }
+              { 
+                aspectRatio: media[0].width && media[0].height 
+                  ? media[0].width / media[0].height 
+                  : 1 
+              }
             ]} 
             resizeMode="cover" 
           />
-          {media[0].mediaType === 'video' && (
-            <View style={styles.videoOverlay}>
-              <View style={styles.playButton}>
-                <Ionicons name="play" size={32} color="#FFF" />
-              </View>
-              <Text style={styles.videoDuration}>2:30</Text>
-            </View>
+          {media[0].caption && (
+            <Text style={styles.mediaCaption}>{media[0].caption}</Text>
           )}
         </TouchableOpacity>
       )
@@ -250,7 +288,7 @@ export default function NewsFeed() {
             onPress={() => console.log('View media', index)}
           >
             <Image 
-              source={{ uri: item.url }} 
+              source={{ uri: item.base64 || item.uri }} 
               style={styles.mediaThumbnail}
               resizeMode="cover"
             />
@@ -264,13 +302,13 @@ export default function NewsFeed() {
   }
 
   const renderPoll = (poll) => {
-    if (!poll || !poll.question || !poll.options || poll.options.length === 0) return null
+    if (!poll || !poll.options || poll.options.length === 0) return null
     
     const totalVotes = poll.totalVotes || poll.options.reduce((sum, opt) => sum + (opt.votes || 0), 0)
     
     return (
       <View style={styles.pollContainer}>
-        <Text style={styles.pollQuestion}>{poll.question}</Text>
+        <Text style={styles.pollQuestion}>Poll</Text>
         {poll.options.map((option, index) => (
           <TouchableOpacity 
             key={option._id || index}
@@ -278,7 +316,7 @@ export default function NewsFeed() {
             onPress={() => console.log('Vote for:', option.text)}
           >
             <View style={styles.pollOptionContent}>
-              <Text style={styles.pollOptionText}>{option.text}</Text>
+              <Text style={styles.pollOptionText}>{option.text || `Option ${index + 1}`}</Text>
               <Text style={styles.pollOptionVotes}>{option.votes || 0} votes</Text>
             </View>
             <View style={styles.pollBar}>
@@ -289,73 +327,59 @@ export default function NewsFeed() {
             </View>
           </TouchableOpacity>
         ))}
-        <Text style={styles.pollTotalVotes}>{totalVotes} total votes</Text>
+        <Text style={styles.pollTotalVotes}>{totalVotes} total votes • {poll.isActive ? 'Active' : 'Ended'}</Text>
       </View>
     )
   }
 
-  const renderLinkPreview = (linkPreview) => {
-    if (!linkPreview || !linkPreview.url) return null
-    
-    return (
-      <TouchableOpacity 
-        style={styles.linkPreviewContainer}
-        onPress={() => console.log('Open link:', linkPreview.url)}
-      >
-        {linkPreview.image && (
-          <Image 
-            source={{ uri: linkPreview.image }}
-            style={styles.linkPreviewImage}
-            resizeMode="cover"
-          />
-        )}
-        <View style={styles.linkPreviewContent}>
-          <Text style={styles.linkPreviewTitle}>{linkPreview.title || 'Shared Link'}</Text>
-          {linkPreview.description && (
-            <Text style={styles.linkPreviewDescription}>{linkPreview.description}</Text>
-          )}
-          <Text style={styles.linkPreviewUrl}>{linkPreview.url.replace('https://', '').replace('http://', '')}</Text>
-        </View>
-      </TouchableOpacity>
-    )
-  }
-
   const renderEvent = (event) => {
-    if (!event || !event.title) return null
+    // Check if event exists and has meaningful data
+    if (!event || typeof event !== 'object') return null
     
-    const eventDate = event.date ? new Date(event.date) : null
+    // Check if this is an actual event with specific event data
+    // Only show if it has title, description, date, location, or registrationLink
+    const isActualEvent = event.title || event.description || event.date || event.location || event.registrationLink
+    
+    if (!isActualEvent) return null
     
     return (
       <View style={styles.eventContainer}>
         <View style={styles.eventHeader}>
           <MaterialIcons name="event" size={24} color="#004CFF" />
-          <Text style={styles.eventTitle}>{event.title}</Text>
+          <Text style={styles.eventTitle}>{event.title || 'Event'}</Text>
         </View>
         <View style={styles.eventDetails}>
-          {eventDate && (
+          {event.date && (
             <View style={styles.eventDetail}>
               <Feather name="calendar" size={16} color="#666" />
               <Text style={styles.eventDetailText}>
-                {eventDate.toLocaleDateString('en-US', { 
-                  weekday: 'short', 
-                  month: 'short', 
-                  day: 'numeric' 
+                {new Date(event.date).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric'
                 })}
-                {event.time ? ` • ${event.time}` : ''}
               </Text>
             </View>
           )}
           <View style={styles.eventDetail}>
             <Feather name={event.isVirtual ? "globe" : "map-pin"} size={16} color="#666" />
             <Text style={styles.eventDetailText}>
-              {event.isVirtual ? 'Virtual Event' : event.location || 'Location'}
+              {event.isVirtual ? 'Virtual Event' : event.location || 'In-person Event'}
             </Text>
           </View>
+          {(event.attendees && event.attendees.length > 0) && (
+            <View style={styles.eventDetail}>
+              <Feather name="users" size={16} color="#666" />
+              <Text style={styles.eventDetailText}>
+                {event.attendees.length} attending
+              </Text>
+            </View>
+          )}
         </View>
-        {event.registrationLink && (
+        {(event.registrationLink || event.isActive) && (
           <TouchableOpacity style={styles.registerButton}>
             <Text style={styles.registerButtonText}>
-              {event.attendees?.some(attendee => attendee._id === 'currentUser') ? 'Registered ✓' : 'Register Now'}
+              {event.attendees?.some(attendee => attendee._id === 'currentUser') ? 'Registered ✓' : 'View Details'}
             </Text>
           </TouchableOpacity>
         )}
@@ -364,20 +388,15 @@ export default function NewsFeed() {
   }
 
   const renderItem = ({ item }) => {
-    // Get location name safely
-    const locationName = item.location 
-      ? (typeof item.location === 'string' ? item.location : item.location.name)
-      : null
-    
     // Get username from author
-    const username = item.author?.username || item.author?.name?.toLowerCase().replace(/\s+/g, '') || 'user'
+    const username = item.author?.name?.toLowerCase().replace(/\s+/g, '') || 'user'
 
     return (
       <View style={styles.card}>
         {/* Header */}
         <View style={styles.header}>
           <Image 
-            source={{ uri: item.author?.profilePic || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400' }}
+            source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400' }}
             style={styles.avatar}
           />
           <View style={styles.headerInfo}>
@@ -393,14 +412,6 @@ export default function NewsFeed() {
               <Text style={styles.username}>@{username}</Text>
               <Text style={styles.dot}>•</Text>
               <Text style={styles.postTime}>{formatDate(item.createdAt)}</Text>
-              {locationName && (
-                <>
-                  <Text style={styles.dot}>•</Text>
-                  <Text style={styles.location}>
-                    <Ionicons name="location-outline" size={12} color="#666" /> {locationName}
-                  </Text>
-                </>
-              )}
             </View>
           </View>
           <TouchableOpacity style={styles.moreButton}>
@@ -409,7 +420,7 @@ export default function NewsFeed() {
         </View>
 
         {/* Audience Badge */}
-        {item.audience !== 'public' && (
+        {item.audience && item.audience !== 'public' && (
           <View style={styles.audienceBadge}>
             <MaterialIcons 
               name={item.audience === 'private' ? 'lock' : 'people'} 
@@ -417,7 +428,8 @@ export default function NewsFeed() {
               color="#666" 
             />
             <Text style={styles.audienceText}>
-              {item.audience === 'private' ? 'Only Me' : 'Followers'}
+              {item.audience === 'private' ? 'Only Me' : 
+               item.audience === 'followers' ? 'Followers' : item.audience}
             </Text>
           </View>
         )}
@@ -429,25 +441,14 @@ export default function NewsFeed() {
           </Text>
         )}
 
-        {/* Feeling */}
-        {item.feeling && (
-          <View style={styles.feelingContainer}>
-            <MaterialIcons name="emoji-emotions" size={16} color="#FFD700" />
-            <Text style={styles.feelingText}>Feeling {item.feeling}</Text>
-          </View>
-        )}
-
         {/* Media */}
         {renderMedia(item.media)}
 
-        {/* Poll */}
-        {renderPoll(item.poll)}
+        {/* Poll - only render if poll has data */}
+        {item.poll && Object.keys(item.poll).length > 0 && renderPoll(item.poll)}
 
-        {/* Event */}
-        {renderEvent(item.event)}
-
-        {/* Link Preview */}
-        {renderLinkPreview(item.linkPreview)}
+        {/* Event - only render if it's an actual event with title/description/date/location/registrationLink */}
+        {item.event && (item.event.title || item.event.description || item.event.date || item.event.location || item.event.registrationLink) && renderEvent(item.event)}
 
         {/* Hashtags */}
         {item.hashtags && item.hashtags.length > 0 && (
@@ -457,6 +458,16 @@ export default function NewsFeed() {
                 <Text style={styles.tagText}>#{tag}</Text>
               </TouchableOpacity>
             ))}
+          </View>
+        )}
+
+        {/* Tagged Users */}
+        {item.taggedUsers && item.taggedUsers.length > 0 && (
+          <View style={styles.taggedContainer}>
+            <Ionicons name="person" size={14} color="#666" />
+            <Text style={styles.taggedText}>
+              with {item.taggedUsers.map(user => user.name).join(', ')}
+            </Text>
           </View>
         )}
 
@@ -551,6 +562,13 @@ export default function NewsFeed() {
         showsVerticalScrollIndicator={false}
         refreshing={false}
         onRefresh={() => console.log('refreshing...')}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyState}>
+            <Ionicons name="newspaper-outline" size={60} color="#ccc" />
+            <Text style={styles.emptyStateText}>No posts yet</Text>
+            <Text style={styles.emptyStateSubtext}>Be the first to post something!</Text>
+          </View>
+        )}
       />
     </View>
   )
@@ -579,6 +597,22 @@ const styles = StyleSheet.create({
   listHeaderSubtitle: {
     fontSize: 14,
     color: '#666',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#999',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#999',
   },
   separator: {
     height: 8,
@@ -639,12 +673,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
   },
-  location: {
-    fontSize: 13,
-    color: '#666',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   moreButton: {
     padding: 4,
   },
@@ -669,21 +697,6 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 12,
   },
-  feelingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF8E1',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 12,
-    alignSelf: 'flex-start',
-  },
-  feelingText: {
-    fontSize: 14,
-    color: '#FF8F00',
-    marginLeft: 6,
-  },
   singleMediaContainer: {
     borderRadius: 8,
     overflow: 'hidden',
@@ -694,34 +707,11 @@ const styles = StyleSheet.create({
     width: '100%',
     maxHeight: 400,
   },
-  videoOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playButton: {
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  videoDuration: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    color: '#FFF',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    fontSize: 12,
+  mediaCaption: {
+    padding: 8,
+    fontSize: 14,
+    color: '#666',
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   multipleMediaContainer: {
     marginBottom: 12,
@@ -839,36 +829,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  linkPreviewContainer: {
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  linkPreviewImage: {
-    width: '100%',
-    height: 150,
-  },
-  linkPreviewContent: {
-    padding: 12,
-  },
-  linkPreviewTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  linkPreviewDescription: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 4,
-    lineHeight: 18,
-  },
-  linkPreviewUrl: {
-    fontSize: 12,
-    color: '#1a73e8',
-  },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -886,6 +846,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#004CFF',
     fontWeight: '500',
+  },
+  taggedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  taggedText: {
+    fontSize: 13,
+    color: '#666',
+    marginLeft: 6,
   },
   reactionSummary: {
     flexDirection: 'row',
@@ -918,12 +888,10 @@ const styles = StyleSheet.create({
   reactionCountText: {
     fontSize: 13,
     color: '#666',
-    marginRight: 8,
   },
   commentCountText: {
     fontSize: 13,
     color: '#666',
-    marginRight: 8,
   },
   shareCountText: {
     fontSize: 13,

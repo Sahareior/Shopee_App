@@ -32,7 +32,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { usePostSocialPostMutation } from '@/app/redux/slices/jsonApiSlice';
+import { useGetNewsFeedQuery, usePostSocialPostMutation } from '@/app/redux/slices/jsonApiSlice';
 
 const { width } = Dimensions.get('window');
 const MAX_MEDIA = 10;
@@ -41,7 +41,7 @@ const PostCreationComponent = ({ onPostCreated, onClose }) => {
   const router = useRouter();
   const scrollViewRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  
+  const { data: demoData,refetch } = useGetNewsFeedQuery()
   // Post content states
   const [content, setContent] = useState('');
   const [media, setMedia] = useState([]);
@@ -265,40 +265,61 @@ const PostCreationComponent = ({ onPostCreated, onClose }) => {
     }
   };
 
-  const convertImageToBase64 = async (uri) => {
+const convertImageToBase64 = async (uri) => {
+  try {
+    // determine encoding fallback: prefer FileSystem.EncodingType.Base64 if defined
+    const encoding = (FileSystem && FileSystem.EncodingType && FileSystem.EncodingType.Base64)
+      ? FileSystem.EncodingType.Base64
+      : 'base64';
+
+    // Try the fast path: read file directly with expo-file-system
     try {
-      // Read file as base64
-      const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      
-      // Get file info to determine MIME type
-      const fileInfo = await FileSystem.getInfoAsync(uri);
-      const extension = fileInfo.uri.split('.').pop().toLowerCase();
-      
-      let mimeType = 'image/jpeg'; // default
-      switch (extension) {
-        case 'png':
-          mimeType = 'image/png';
-          break;
-        case 'gif':
-          mimeType = 'image/gif';
-          break;
-        case 'webp':
-          mimeType = 'image/webp';
-          break;
-        case 'jpg':
-        case 'jpeg':
-        default:
-          mimeType = 'image/jpeg';
-      }
-      
+      const base64 = await FileSystem.readAsStringAsync(uri, { encoding });
+      // try to infer mime type from uri extension
+      const uriNoQuery = uri.split('?')[0];
+      const extension = (uriNoQuery.split('.').pop() || '').toLowerCase();
+      let mimeType = 'image/jpeg';
+      if (extension === 'png') mimeType = 'image/png';
+      else if (extension === 'gif') mimeType = 'image/gif';
+      else if (extension === 'webp') mimeType = 'image/webp';
+      else if (extension === 'heic' || extension === 'heif') mimeType = 'image/heic';
+
       return `data:${mimeType};base64,${base64}`;
-    } catch (error) {
-      console.error('Error converting image to base64:', error);
-      throw new Error('Failed to convert image');
+    } catch (readErr) {
+      // If readAsStringAsync fails (common on content:// URIs), we'll fallback below
+      console.warn('readAsStringAsync failed, falling back to fetch+FileReader:', readErr);
     }
-  };
+
+    // Fallback: fetch the file and convert blob -> dataURL using FileReader
+    // This covers content:// and http(s) URIs as well.
+    const response = await fetch(uri);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.status}`);
+    }
+    const blob = await response.blob();
+
+    // Try to infer mime from blob if possible, otherwise fallback to jpeg
+    const mimeType = blob.type || 'image/jpeg';
+
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => {
+        reader.abort();
+        reject(new Error('Failed to read blob as data URL'));
+      };
+      reader.onloadend = () => {
+        resolve(reader.result); // already in data:<mime>;base64,... format
+      };
+      reader.readAsDataURL(blob);
+    });
+
+    return dataUrl;
+  } catch (error) {
+    console.error('Error converting image to base64:', error);
+    throw new Error('Failed to convert image');
+  }
+};
+
 
   const handleCreatePost = async () => {
     // Validation based on post type
@@ -416,12 +437,14 @@ const PostCreationComponent = ({ onPostCreated, onClose }) => {
           break;
       }
 
+      console.log(postData,'asdadd')
       // Use the mutation hook
       const response = await postSocialPost({
         postData,
       }).unwrap();
 
       if (response.success) {
+        refetch()
         Alert.alert(
           'Success!',
           isScheduled ? 'Post scheduled successfully' : 'Post created successfully',
