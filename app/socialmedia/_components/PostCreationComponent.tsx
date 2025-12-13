@@ -658,8 +658,8 @@ const convertImageToBase64 = async (uri) => {
 
   const renderPostTypeSelector = () => (
     <View style={styles.postTypeSelector}>
-      <Text style={styles.sectionTitle}>Create a</Text>
-      <ScrollView 
+      {/* <Text style={styles.sectionTitle}>Create a</Text> */}
+      {/* <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
         style={styles.typeScroll}
@@ -720,7 +720,7 @@ const convertImageToBase64 = async (uri) => {
           <MaterialIcons name="shopping-bag" size={24} color={postType === 'product' ? '#004CFF' : '#666'} />
           <Text style={[styles.typeText, postType === 'product' && styles.activeTypeText]}>Product</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </ScrollView> */}
     </View>
   );
 
@@ -823,9 +823,9 @@ const convertImageToBase64 = async (uri) => {
         >
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose || (() => router.back())}>
+            {/* <TouchableOpacity onPress={onClose || (() => router.back())}>
               <Ionicons name="close" size={28} color="#333" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <Text style={styles.headerTitle}>Create Post</Text>
             <TouchableOpacity 
               style={[styles.postButton, (!content.trim() && media.length === 0 && postType === 'text') && styles.postButtonDisabled]}

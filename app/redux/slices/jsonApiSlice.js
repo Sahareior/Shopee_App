@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 // Create a custom base query with proper async token handling
 const baseQuery = fetchBaseQuery({
-  baseUrl: 'https://waters-processing-keen-roberts.trycloudflare.com',
+  baseUrl: 'http://localhost:8000',
   prepareHeaders: async (headers, { getState }) => {
     let token = null;
     
@@ -68,7 +68,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
     //   result = await baseQuery(args, api, extraOptions);
     // } else {
     //   // Clear invalid token
-      await AsyncStorage.removeItem('authToken');
+      // await AsyncStorage.removeItem('authToken');
       
     //   api.dispatch({ type: 'auth/logout' });
     // }
@@ -77,7 +77,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   // Handle network errors
   if (result.error && result.error.status === 'FETCH_ERROR') {
     console.error('🌐 Network error - check backend URL and connection');
-    console.log('Current baseUrl:', 'https://waters-processing-keen-roberts.trycloudflare.com');
+    console.log('Current baseUrl:', 'http://localhost:8000');
   }
   
   return result;

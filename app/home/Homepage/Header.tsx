@@ -168,7 +168,7 @@ const Header = ({ user, notificationCount = 3, messageCount = 2 }) => {
           {/* Profile Menu */}
           <TouchableOpacity 
             style={styles.profileButton}
-            onPress={() => router.push('/home/profile')}
+            onPress={() => router.push('/home/Homepage/UserData')}
           >
             <Image 
               style={styles.profileImage} 
@@ -192,12 +192,12 @@ const Header = ({ user, notificationCount = 3, messageCount = 2 }) => {
           onPress={()=> router.push('/home/ProfilePage/activity')}
         >
           <Ionicons name="camera" size={20} color="#FFF" />
-          <Text style={styles.storyButtonText}>Add Story</Text>
+          {/* <Text style={styles.storyButtonText}>Add Story</Text> */}
         </TouchableOpacity>
       </View>
 
       {/* Quick Actions */}
-      <ScrollView 
+      {/* <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
         style={styles.quickActions}
@@ -238,7 +238,7 @@ const Header = ({ user, notificationCount = 3, messageCount = 2 }) => {
           <MaterialIcons name="groups" size={20} color="#666" />
           <Text style={styles.actionText}>Groups</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </ScrollView> */}
     </View>
   )
 }

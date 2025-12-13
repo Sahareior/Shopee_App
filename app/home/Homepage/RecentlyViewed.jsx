@@ -1,25 +1,26 @@
 // RecentlyViewed.js
 import { useGetStoryQuery, useLazyGetMediaByIdQuery } from '@/app/redux/slices/jsonApiSlice';
+import { Ionicons } from '@expo/vector-icons'; // Import icons for add story
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Modal,
-    Image as RNImage,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Dimensions,
+  Modal,
+  Image as RNImage,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const RecentlyViewed = ({ from, data }) => {
-  const [activeStatus, setActiveStatus] = useState('To Pay');
+ 
   const [storyModalVisible, setStoryModalVisible] = useState(false);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [currentUserIndex, setCurrentUserIndex] = useState(0);
@@ -99,7 +100,7 @@ const loadStoryMedia = async (storyId) => {
       return null;
     }
 
-    const response = await fetch(`https://waters-processing-keen-roberts.trycloudflare.com/story/media/${storyId}`, {
+    const response = await fetch(`http://localhost:8000/story/media/${storyId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -152,7 +153,14 @@ const loadStoryMedia = async (storyId) => {
     },
   ];
 
-  const allUsers = storiesData.length > 0 ? storiesData : otherUsers;
+  // Find current user and check if they have stories
+  const currentUserData = storiesData.find(user => user.isCurrentUser);
+  const hasCurrentUserStories = currentUserData?.stories?.length > 0;
+  
+  // Filter out current user from allUsers if they don't have stories
+  const allUsers = storiesData.length > 0 
+    ? storiesData.filter(user => user.isCurrentUser ? hasCurrentUserStories : true)
+    : otherUsers;
 
   const openStory = async (userIndex, storyIndex = 0) => {
     const user = allUsers[userIndex];
@@ -215,6 +223,7 @@ const loadStoryMedia = async (storyId) => {
   const closeStory = () => {
     setStoryModalVisible(false);
     setCurrentStoryIndex(0);
+    setCurrentUserIndex(0);
     setCurrentMediaUrl(null);
     setImageAspectRatio(1);
   };
@@ -250,9 +259,6 @@ const loadStoryMedia = async (storyId) => {
 const renderTextOverlays = (overlays, containerWidth, containerHeight, storyData) => {
   if (!overlays || overlays.length === 0) return null;
 
-  // Get the original image dimensions from the story data
-  const originalImageWidth = storyData?.imageWidth || containerWidth;
-  const originalImageHeight = storyData?.imageHeight || containerHeight;
   const previewWidth = storyData?.previewWidth || containerWidth;
   const previewHeight = storyData?.previewHeight || containerHeight;
 
@@ -310,6 +316,10 @@ const renderTextOverlays = (overlays, containerWidth, containerHeight, storyData
   });
 };
 
+  const handleAddStory = () => {
+    router.push('/home/ProfilePage/activity');
+  };
+
   const currentUser = allUsers[currentUserIndex];
   const currentStory = currentUser?.stories?.[currentStoryIndex];
 
@@ -348,6 +358,27 @@ const renderTextOverlays = (overlays, containerWidth, containerHeight, storyData
                 </TouchableOpacity>
               ))
             ) : (
+              // Render Add Story button if current user has no stories
+              !hasCurrentUserStories && (
+                <TouchableOpacity 
+                  style={styles.addStoryItem} 
+                  onPress={handleAddStory}
+                >
+                  <View style={styles.addStoryImageContainer}>
+                    <Image 
+                      source={{ uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.1.0&auto=format&fit=crop&w=500&q=60' }} 
+                      style={styles.addStoryImage} 
+                      contentFit="cover" 
+                    />
+                    <View style={styles.addStoryPlusIcon}>
+                      <Ionicons name="add-circle" size={28} color="#004CFF" />
+                    </View>
+                  </View>
+                  <Text style={styles.addStoryText}>Add a story</Text>
+                </TouchableOpacity>
+              ),
+              
+              // Render all users (excluding current user if they have no stories)
               allUsers.map((user, index) => (
                 <TouchableOpacity key={user.id} style={styles.userItem} onPress={() => openStory(index, 0)}>
                   <View style={styles.imageContainer}>
@@ -542,6 +573,46 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     marginRight: 15, 
     width: 70 
+  },
+  // Add Story styles
+  addStoryItem: { 
+    alignItems: 'center', 
+    marginRight: 15, 
+    width: 70 
+  },
+  addStoryImageContainer: { 
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addStoryImage: { 
+    width: 70, 
+    height: 70, 
+    borderRadius: 35, 
+    borderWidth: 2, 
+    borderColor: '#E0E0E0', 
+    opacity: 0.9,
+  },
+  addStoryPlusIcon: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    backgroundColor: 'white',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#004CFF',
+  },
+  addStoryText: { 
+    fontSize: 12, 
+    fontWeight: '500', 
+    color: '#666', 
+    textAlign: 'center', 
+    marginBottom: 4 
   },
   imageContainer: { 
     position: 'relative',

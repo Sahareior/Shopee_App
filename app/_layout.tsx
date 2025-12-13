@@ -6,30 +6,41 @@ import { Platform, View, ActivityIndicator } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { store } from "./redux/store";
 import { ToastProvider } from 'react-native-toast-notifications'
-import AsyncStorage from '@react-native-async-storage/async-storage'; // IMPORTANT: Use AsyncStorage instead of localStorage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function RootLayoutNav() {
   const authState = useSelector((state) => state.auth);
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(null); // Start with null to indicate loading
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userId,setUserId]=useState({});
+  const [user, setUser] = useState(null);
+  const [userLoaded, setUserLoaded] = useState(false); // Track if user data is loaded
 
   useEffect(() => {
-    // Check authentication status
     const checkAuth = async () => {
       try {
-        // Use AsyncStorage instead of localStorage for React Native
         const token = await AsyncStorage.getItem('authToken');
         const userData = await AsyncStorage.getItem('authUser');
-        const user = userData ? JSON.parse(userData) : null;
-        setUserId(user);
-
+        
         console.log('Token from storage:', token);
+        console.log('User data from storage:', userData);
+        
         setIsAuthenticated(!!token);
+        
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+          console.log('Parsed user:', parsedUser);
+        } else {
+          setUser(null);
+        }
+        
+        setUserLoaded(true); // Mark user data as loaded
       } catch (error) {
         console.error('Error reading auth token:', error);
         setIsAuthenticated(false);
+        setUser(null);
+        setUserLoaded(true);
       } finally {
         setIsLoading(false);
       }
@@ -42,37 +53,48 @@ function RootLayoutNav() {
   useEffect(() => {
     if (authState?.token) {
       setIsAuthenticated(true);
+      // Update user data from Redux if available
+      if (authState?.user) {
+        setUser(authState.user);
+        // Also update AsyncStorage
+        AsyncStorage.setItem('authUser', JSON.stringify(authState.user));
+      }
     } else if (authState?.token === null || authState?.token === undefined) {
       setIsAuthenticated(false);
+      setUser(null);
+      setUserLoaded(true);
     }
   }, [authState]);
 
-
+  // Handle navigation based on auth and user data
   useEffect(() => {
     if (isLoading) return; // Don't navigate while still loading
+    if (!userLoaded) return; // Don't navigate until user data is loaded
 
+    console.log('Navigation check:', {
+      isAuthenticated,
+      user,
+      firstLogin: user?.firstLogin,
+      userLoaded
+    });
 
-
-
-
-    if (isAuthenticated ) {
-
-  
-      // Use setTimeout to ensure navigation happens after mount
-      const timer = setTimeout(() => {
+    if (isAuthenticated) {
+      if (user?.firstLogin === true) {
+        console.log('Navigating to home-slider (first login)');
+        router.replace('/home/home-slider');
+      } else if (user?.firstLogin === false) {
+        console.log('Navigating to home (not first login)');
         router.replace('/(tabs)/home');
-      }, 100);
-      return () => clearTimeout(timer);
+      } else {
+        // User is authenticated but firstLogin is undefined/null
+        console.log('User authenticated but firstLogin missing, navigating to home');
+        router.replace('/(tabs)/home');
+      }
     } else {
-      const timer = setTimeout(() => {
-        // Only navigate to index if we're not already there
-        if (router.canGoBack()) {
-          router.replace('/');
-        }
-      }, 100);
-      return () => clearTimeout(timer);
+      console.log('Not authenticated, navigating to index');
+      router.replace('/');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, user, userLoaded, router]);
 
   // Add this useEffect for Platform-specific imports
   useEffect(() => {
@@ -82,7 +104,7 @@ function RootLayoutNav() {
   }, []);
 
   // Show loading indicator while checking auth
-  if (isLoading) {
+  if (isLoading || !userLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -105,7 +127,6 @@ function RootLayoutNav() {
           contentStyle: { backgroundColor: '#ffffff' },
         }}
       >
-        {/* ALWAYS render both stacks, let Expo Router handle which one to show based on navigation state */}
         <Stack.Screen 
           name="index" 
           options={{
@@ -140,7 +161,9 @@ function RootLayoutNav() {
             gestureDirection: 'horizontal',
             animationDuration: 400,
           }} 
+          
         />
+        
       </Stack>
     </GestureHandlerRootView>
   );

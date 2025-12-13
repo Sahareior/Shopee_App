@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react'
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  Image, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView,
-  Dimensions,
-  Modal,
-  TextInput,
-  Alert
-} from 'react-native'
-import { Ionicons, FontAwesome, MaterialIcons, MaterialCommunityIcons, Feather } from '@expo/vector-icons'
 import { useGetNewsFeedQuery } from '@/app/redux/slices/jsonApiSlice'
+import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons'
+import React, { useEffect, useState } from 'react'
+import {
+    Alert,
+    Dimensions,
+    FlatList,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native'
+import ImageModal from './ImageModal'
 
 const { width } = Dimensions.get('window')
 
@@ -51,6 +51,30 @@ const getReactionIcon = (type) => {
   }
 }
 
+const getFeelingIcon = (feeling) => {
+  switch(feeling?.toLowerCase()) {
+    case 'happy': return '😊';
+    case 'sad': return '😢';
+    case 'angry': return '😠';
+    case 'excited': return '🤩';
+    case 'cool': return '😎';
+    case 'love': return '❤️';
+    case 'sick': return '🤒';
+    case 'thinking': return '🤔';
+    case 'blessed': return '🙏';
+    case 'grateful': return '🙌';
+    case 'tired': return '😴';
+    case 'confused': return '😕';
+    case 'nervous': return '😰';
+    case 'proud': return '😊';
+    default: return '😊';
+  }
+}
+
+const getFeelingLabel = (feeling) => {
+  return feeling ? feeling.charAt(0).toUpperCase() + feeling.slice(1) : '';
+}
+
 const ReactionPicker = ({ visible, position, onSelect, onClose }) => {
   if (!visible) return null
 
@@ -85,6 +109,8 @@ export default function NewsFeed() {
   const [commentInputs, setCommentInputs] = useState({})
   const [showReactionPicker, setShowReactionPicker] = useState(null)
   const [reactionPickerPosition, setReactionPickerPosition] = useState({ x: 0, y: 0 })
+  const [showModal, setShowModal] = useState(false)
+  const [imageData,setImageData] = useState(null)
   const { data: demoData } = useGetNewsFeedQuery()
   const [posts, setPosts] = useState([])
 
@@ -253,7 +279,10 @@ export default function NewsFeed() {
         <TouchableOpacity 
           style={styles.singleMediaContainer}
           activeOpacity={0.9}
-          onPress={() => console.log('View media')}
+          onPress={() => {
+            setShowModal(true)
+            setImageData(media)
+          }}
         >
           <Image 
             source={{ uri: media[0].base64 || media[0].uri }} 
@@ -285,7 +314,10 @@ export default function NewsFeed() {
             key={item._id || index}
             style={styles.mediaItem}
             activeOpacity={0.9}
-            onPress={() => console.log('View media', index)}
+            onPress={() => {
+                setShowModal(true)
+                setImageData(media)
+            }}
           >
             <Image 
               source={{ uri: item.base64 || item.uri }} 
@@ -418,6 +450,14 @@ export default function NewsFeed() {
             <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
           </TouchableOpacity>
         </View>
+
+        {/* Feeling Badge */}
+        {item.feeling && (
+          <View style={styles.feelingBadge}>
+            <Text style={styles.feelingEmoji}>{getFeelingIcon(item.feeling)}</Text>
+            <Text style={styles.feelingText}>feeling {getFeelingLabel(item.feeling)}</Text>
+          </View>
+        )}
 
         {/* Audience Badge */}
         {item.audience && item.audience !== 'public' && (
@@ -570,6 +610,12 @@ export default function NewsFeed() {
           </View>
         )}
       />
+      <ImageModal
+  visible={showModal}
+  media={imageData}
+//   base64Image={imageFromBackend}
+  onClose={() => setShowModal(false)}
+/>
     </View>
   )
 }
@@ -690,6 +736,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginLeft: 4,
+  },
+  feelingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF9E6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#FFE4B5',
+  },
+  feelingEmoji: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  feelingText: {
+    fontSize: 12,
+    color: '#B8860B',
+    fontWeight: '500',
   },
   content: {
     fontSize: 15,

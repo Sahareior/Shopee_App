@@ -15,6 +15,7 @@ export default function RootLayout() {
       <Stack.Screen name="Toreceive" />
       <Stack.Screen name="OrderTracking" />
       <Stack.Screen name="activity" />
+      <Stack.Screen name="UserData" />
     </Stack>
   );
 }
