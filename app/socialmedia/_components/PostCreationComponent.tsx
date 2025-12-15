@@ -98,6 +98,43 @@ const PostCreationComponent = ({ onPostCreated, onClose }) => {
     'sad', 'angry', 'tired', 'crazy', 'confused', 'shocked'
   ];
 
+  const resetForm = () => {
+  setContent('');
+  setMedia([]);
+  setAudience('public');
+  setHashtags([]);
+  setTaggedUsers([]);
+  setTaggedProducts([]);
+  setFeeling('');
+  setLocation('');
+
+  setPostType('text');
+  setPoll({ question: '', options: ['', ''] });
+  setEvent({
+    title: '',
+    description: '',
+    date: new Date(),
+    time: '10:00 AM',
+    isVirtual: false,
+    location: '',
+    registrationLink: '',
+    maxAttendees: ''
+  });
+
+  setLinkPreview({ url: '', title: '', description: '', image: '' });
+  setIsScheduled(false);
+  setScheduledDate(new Date());
+
+  // Close modals
+  setShowPollModal(false);
+  setShowEventModal(false);
+  setShowLinkModal(false);
+  setShowHashtagInput(false);
+  setShowLocationModal(false);
+  setShowScheduleModal(false);
+};
+
+
   const handleSelectMedia = async () => {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -442,9 +479,11 @@ const convertImageToBase64 = async (uri) => {
       const response = await postSocialPost({
         postData,
       }).unwrap();
+      
 
       if (response.success) {
         refetch()
+        resetForm()
         Alert.alert(
           'Success!',
           isScheduled ? 'Post scheduled successfully' : 'Post created successfully',

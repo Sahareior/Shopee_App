@@ -2,14 +2,27 @@ import { Feather, FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icon
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 
-const Header = ({ user, notificationCount = 3, messageCount = 2 }) => {
+const Header = ({  notificationCount = 3, messageCount = 2 }) => {
   const router = useRouter()
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+    const [user,setUser] = useState(null)
+
+ 
+
+  useEffect(()=> {
+     const getUser = async () => {
+          const userData = await AsyncStorage.getItem('authUser')
+          const user = userData ? JSON.parse(userData) : null
+          setUser(user)
+         
+        }
+        getUser()
+  },[])
 
   const handleLogout = async() => {
     await AsyncStorage.removeItem('authToken');

@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import SearchBar from './SearchBar'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+
 
 
 const { width: screenWidth } = Dimensions.get('window')
@@ -15,6 +17,21 @@ const ProfileHeader = () => {
   const scrollViewRef = useRef(null)
   const route = useRouter()
   const intervalRef = useRef(null)
+  const [user,setUser] = useState(null)
+
+ 
+
+  useEffect(()=> {
+     const getUser = async () => {
+          const userData = await AsyncStorage.getItem('authUser')
+          const user = userData ? JSON.parse(userData) : null
+          setUser(user)
+         
+        }
+        getUser()
+  },[])
+
+
 
   // Banner width calculation
   const bannerWidth = screenWidth - 32 // 16px padding on each side
@@ -142,7 +159,7 @@ const ProfileHeader = () => {
       {/* Header Section */}
       <View style={styles.header}>
         <View style={styles.headingContainer}>
-          <Text style={styles.greeting}>Hello,Sahareior 👋</Text>
+          <Text style={styles.greeting}>Hello,{user?.name} 👋</Text>
           <TouchableOpacity style={styles.notificationButton}>
             <Ionicons name="notifications-outline" size={24} color="#333" />
             <View style={styles.notificationBadge}>

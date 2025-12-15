@@ -1,26 +1,28 @@
-import { useGetNewsFeedQuery, useLazyReactPostQuery } from '@/app/redux/slices/jsonApiSlice'
+import { useDeletePostsMutation, useGetNewsFeedQuery, useLazyReactPostQuery } from '@/app/redux/slices/jsonApiSlice'
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons'
+import { useToast } from "react-native-toast-notifications";
 import React, { useEffect, useState, useRef } from 'react'
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    FlatList,
-    Image,
-    NativeScrollEvent,
-    NativeSyntheticEvent,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native'
 import ImageModal from './ImageModal'
 
 const { width, height } = Dimensions.get('window')
-const REFRESH_THRESHOLD = 100; // How far to pull down to trigger refresh
-const REFRESH_HEIGHT = 60; // Height of the refresh indicator
+const REFRESH_THRESHOLD = 100;
+const REFRESH_HEIGHT = 60;
 
 const formatDate = (iso) => {
   try {
@@ -174,15 +176,125 @@ const RefreshHeader = ({ pullAnim, isRefreshing, refreshTriggered, opacity }) =>
   );
 }
 
+// Custom Popover Component
+const CustomPopover = ({
+  visible,
+  anchorPosition,
+  onClose,
+  onEdit,
+  onDelete,
+  postId,
+  isDeleting
+}) => {
+  const scaleAnim = useRef(new Animated.Value(0.7)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 140,
+          useNativeDriver: true
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 140,
+          useNativeDriver: true
+        })
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 0.7,
+          duration: 120,
+          useNativeDriver: true
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 120,
+          useNativeDriver: true
+        })
+      ]).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Modal transparent visible animationType="none">
+      <TouchableOpacity
+        style={styles.popoverOverlay}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        {/* Popover Card */}
+        <Animated.View
+          style={[
+            styles.popoverCard,
+            {
+              top: anchorPosition.y + 10,
+              left: anchorPosition.x - 120,
+              opacity: opacityAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}
+        >
+          {/* Arrow */}
+          <View style={styles.popoverArrow} />
+
+          {/* Edit */}
+          <TouchableOpacity
+            style={styles.popoverRow}
+            onPress={() => {
+              onClose();
+              onEdit?.();
+            }}
+          >
+            <Ionicons name="create-outline" size={18} color="#2C7BE5" />
+            <Text style={styles.popoverRowText}>Edit Post</Text>
+          </TouchableOpacity>
+
+          {/* Delete */}
+          <TouchableOpacity
+            style={styles.popoverRow}
+            onPress={() => {
+              onClose();
+              onDelete?.();
+            }}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <ActivityIndicator size={16} color="red" />
+            ) : (
+              <Ionicons name="trash-outline" size={18} color="#E74C3C" />
+            )}
+            <Text style={[styles.popoverRowText, { color: '#E74C3C' }]}>
+              Delete Post
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
+
 export default function NewsFeed() {
   const [commentInputs, setCommentInputs] = useState({})
   const [showReactionPicker, setShowReactionPicker] = useState(null)
   const [reactionPickerPosition, setReactionPickerPosition] = useState({ x: 0, y: 0 })
   const [showModal, setShowModal] = useState(false)
   const [imageData,setImageData] = useState(null)
+  const [deletingPostId, setDeletingPostId] = useState(null);
+  const [showOptionsModal, setShowOptionsModal] = useState(null); // Changed to store postId
+  const [anchorPosition, setAnchorPosition] = useState({ x: 0, y: 0 });
+  
   const { data: demoData, refetch: postRefetch } = useGetNewsFeedQuery()
   const [trigger, {data,isLoading}] = useLazyReactPostQuery()
   const [posts, setPosts] = useState([])
+  const [deletePosts] = useDeletePostsMutation()
+  const toast = useToast();
   
   // Pull-to-refresh state
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -200,12 +312,10 @@ export default function NewsFeed() {
   useEffect(() => {
     if (demoData?.data?.posts) {
       console.log('Fetched posts:', demoData.data.posts.length);
-      // Process base64 media data
       const processedPosts = demoData.data.posts.map(post => {
         if (post.media && post.media.length > 0) {
           const processedMedia = post.media.map(mediaItem => ({
             ...mediaItem,
-            // Convert base64 to data URI properly
             uri: mediaItem.base64,
             mediaType: mediaItem.mediaType || 'image'
           }));
@@ -217,6 +327,47 @@ export default function NewsFeed() {
     }
   }, [demoData]);
 
+  const handelDelete = async (id) => {
+    try {
+      setDeletingPostId(id);
+      setShowOptionsModal(null); // Close modal immediately
+      
+      const response = await deletePosts(id);
+      
+      if (response?.error?.status === 403) {
+        toast.show("You can only delete your own posts!", {
+          type: "danger",
+          placement: "top",
+          duration: 2000,
+        });
+      } else if (response?.error) {
+        toast.show("Failed to delete post!", {
+          type: "danger",
+          placement: "top",
+          duration: 2000,
+        });
+      } else {
+        toast.show("Your post has been deleted!", {
+          type: "success",
+          placement: "top",
+          duration: 2000,
+        });
+        
+        // Remove from local state
+        setPosts(prev => prev.filter(post => post._id !== id));
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.show("An error occurred!", {
+        type: "danger",
+        placement: "top",
+        duration: 2000,
+      });
+    } finally {
+      setDeletingPostId(null);
+    }
+  };
+
   const handleRefresh = async () => {
     if (isRefreshing) return;
     
@@ -224,10 +375,7 @@ export default function NewsFeed() {
     setRefreshTriggered(true);
     
     try {
-      // Call your existing refetch function
       await postRefetch();
-      
-      // Simulate network delay for better UX
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
       console.error('Refresh failed:', error);
@@ -235,7 +383,6 @@ export default function NewsFeed() {
     } finally {
       setIsRefreshing(false);
       setRefreshTriggered(false);
-      // Animate the pull distance back to 0
       Animated.spring(pullAnim, {
         toValue: 0,
         useNativeDriver: false,
@@ -249,20 +396,16 @@ export default function NewsFeed() {
     const yOffset = event.nativeEvent.contentOffset.y;
     scrollOffset.current = yOffset;
     
-    // Only track pull distance when at the top
     if (yOffset <= 0 && isDragging.current) {
       const pullDownDistance = Math.abs(yOffset);
       setPullDistance(pullDownDistance);
       
-      // Apply rubber band effect for iOS-like feel
       const rubberBandDistance = pullDownDistance > REFRESH_THRESHOLD 
         ? REFRESH_THRESHOLD + (pullDownDistance - REFRESH_THRESHOLD) * 0.3
         : pullDownDistance;
       
-      // Animate the pull distance
       pullAnim.setValue(Math.min(rubberBandDistance, REFRESH_THRESHOLD * 1.5));
       
-      // Trigger refresh when threshold is reached
       if (pullDownDistance >= REFRESH_THRESHOLD && !refreshTriggered) {
         setRefreshTriggered(true);
       }
@@ -276,11 +419,9 @@ export default function NewsFeed() {
   const handleScrollEndDrag = () => {
     isDragging.current = false;
     
-    // Check if we should trigger refresh
     if (pullDistance >= REFRESH_THRESHOLD && !isRefreshing) {
       handleRefresh();
     } else {
-      // Animate back if not enough pull
       Animated.spring(pullAnim, {
         toValue: 0,
         useNativeDriver: false,
@@ -301,7 +442,6 @@ export default function NewsFeed() {
         const alreadyLiked = post.userLiked
         const newLikeCount = alreadyLiked ? post.likeCount - 1 : post.likeCount + 1
         
-        // Update reactionCounts as well for consistency
         const newReactionCounts = { ...post.reactionCounts }
         if (alreadyLiked) {
           newReactionCounts.like = Math.max(0, newReactionCounts.like - 1)
@@ -332,7 +472,6 @@ export default function NewsFeed() {
         const updatedReactions = { ...post.reactions }
         const updatedCounts = { ...post.reactionCounts }
         
-        // Remove current user from all reactions first
         Object.keys(updatedReactions).forEach(type => {
           const index = updatedReactions[type].indexOf('currentUser')
           if (index > -1) {
@@ -341,7 +480,6 @@ export default function NewsFeed() {
           }
         })
         
-        // Add new reaction
         if (!updatedReactions[reactionType].includes('currentUser')) {
           updatedReactions[reactionType].push('currentUser')
           updatedCounts[reactionType] += 1
@@ -355,7 +493,7 @@ export default function NewsFeed() {
           reactionCounts: updatedCounts,
           totalReactions,
           userLiked: reactionType === 'like' && updatedReactions.like.includes('currentUser'),
-          likeCount: updatedCounts.like // Keep likeCount in sync
+          likeCount: updatedCounts.like
         }
       }
       return post
@@ -389,6 +527,12 @@ export default function NewsFeed() {
     setReactionPickerPosition({ x: pageX, y: pageY })
     setShowReactionPicker(postId)
   }
+
+  const showPostOptions = (event, postId) => {
+    const { pageX, pageY } = event.nativeEvent;
+    setAnchorPosition({ x: pageX, y: pageY });
+    setShowOptionsModal(postId);
+  };
 
   const renderReactionSummary = (post) => {
     if (!post.reactionCounts) return null
@@ -464,7 +608,6 @@ const renderMedia = (media) => {
     )
   }
   
-  // Replace ScrollView with FlatList
   return (
     <FlatList
       data={media}
@@ -527,11 +670,8 @@ const renderMedia = (media) => {
   }
 
   const renderEvent = (event) => {
-    // Check if event exists and has meaningful data
     if (!event || typeof event !== 'object') return null
     
-    // Check if this is an actual event with specific event data
-    // Only show if it has title, description, date, location, or registrationLink
     const isActualEvent = event.title || event.description || event.date || event.location || event.registrationLink
     
     if (!isActualEvent) return null
@@ -582,7 +722,6 @@ const renderMedia = (media) => {
   }
 
   const renderItem = ({ item }) => {
-    // Get username from author
     const username = item.author?.name?.toLowerCase().replace(/\s+/g, '') || 'user'
 
     return (
@@ -608,8 +747,33 @@ const renderMedia = (media) => {
               <Text style={styles.postTime}>{formatDate(item.createdAt)}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
+          
+          {/* Options Button */}
+          <TouchableOpacity 
+            onPress={(e) => {
+              e.persist?.();
+              const target = e.target || e.currentTarget;
+              if (target && target.measure) {
+                target.measure((fx, fy, width, height, px, py) => {
+                  showPostOptions({ 
+                    nativeEvent: { 
+                      pageX: px + width / 2, 
+                      pageY: py + height / 2 
+                    } 
+                  }, item._id);
+                });
+              } else {
+                // Fallback
+                showPostOptions(e, item._id);
+              }
+            }}
+            disabled={deletingPostId === item._id}
+          >
+            {deletingPostId === item._id ? (
+              <ActivityIndicator size="small" color="#666" />
+            ) : (
+              <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -646,10 +810,10 @@ const renderMedia = (media) => {
         {/* Media */}
         {renderMedia(item.media)}
 
-        {/* Poll - only render if poll has data */}
+        {/* Poll */}
         {item.poll && Object.keys(item.poll).length > 0 && renderPoll(item.poll)}
 
-        {/* Event - only render if it's an actual event with title/description/date/location/registrationLink */}
+        {/* Event */}
         {item.event && (item.event.title || item.event.description || item.event.date || item.event.location || item.event.registrationLink) && renderEvent(item.event)}
 
         {/* Hashtags */}
@@ -749,6 +913,23 @@ const renderMedia = (media) => {
         onClose={() => setShowReactionPicker(null)}
       />
       
+      {/* Custom Options Modal */}
+      <CustomPopover
+        visible={!!showOptionsModal}
+        anchorPosition={anchorPosition}
+        onClose={() => setShowOptionsModal(null)}
+        onEdit={() => {
+          console.log('Edit post:', showOptionsModal);
+        }}
+        onDelete={() => {
+          if (showOptionsModal) {
+            handelDelete(showOptionsModal);
+          }
+        }}
+        postId={showOptionsModal}
+        isDeleting={deletingPostId === showOptionsModal}
+      />
+      
       {/* Custom Refresh Header */}
       <RefreshHeader 
         pullAnim={pullAnim} 
@@ -794,6 +975,7 @@ const renderMedia = (media) => {
     </View>
   )
 }
+
 
 const styles = StyleSheet.create({
   container: { 
@@ -1113,6 +1295,55 @@ const styles = StyleSheet.create({
   pollOption: {
     marginBottom: 8,
   },
+
+  popoverOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.15)',
+},
+
+popoverCard: {
+  position: 'absolute',
+  width: 170,
+  backgroundColor: 'white',
+  borderRadius: 12,
+  paddingVertical: 8,
+  shadowColor: '#000',
+  shadowOpacity: 0.15,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 6,
+  zIndex: 999,
+},
+
+popoverArrow: {
+  position: 'absolute',
+  top: -8,
+  left: 20,
+  width: 0,
+  height: 0,
+  borderLeftWidth: 8,
+  borderRightWidth: 8,
+  borderBottomWidth: 8,
+  borderLeftColor: 'transparent',
+  borderRightColor: 'transparent',
+  borderBottomColor: 'white',
+  elevation: 3
+},
+
+popoverRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+},
+
+popoverRowText: {
+  marginLeft: 10,
+  fontSize: 14,
+  color: '#333',
+  fontWeight: '500',
+},
+
   
   pollOptionContent: {
     flexDirection: 'row',

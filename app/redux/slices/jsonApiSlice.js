@@ -3,8 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 // Create a custom base query with proper async token handling
+
 const baseQuery = fetchBaseQuery({
-  baseUrl: 'https://ski-macro-carmen-actually.trycloudflare.com',
+  baseUrl: 'https://revisions-processors-expertise-tribe.trycloudflare.com',
   prepareHeaders: async (headers, { getState }) => {
     let token = null;
     
@@ -77,7 +78,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   // Handle network errors
   if (result.error && result.error.status === 'FETCH_ERROR') {
     console.error('🌐 Network error - check backend URL and connection');
-    console.log('Current baseUrl:', 'https://ski-macro-carmen-actually.trycloudflare.com');
+    console.log('Current baseUrl:', 'https://revisions-processors-expertise-tribe.trycloudflare.com');
   }
   
   return result;
@@ -290,6 +291,13 @@ export const jsonApi = createApi({
       })
     }),
 
+    deletePosts: builder.mutation({
+      query: (id) => ({
+        url: `social/${id}`,
+        method:'DELETE'
+      })
+    }),
+
     getNewsFeed: builder.query({
       query: () => '/social/newsfeed'
     }),
@@ -369,5 +377,6 @@ export const {
   useGetNewsFeedQuery,
   useLazyReactPostQuery,
   usePostSocialPostMutation,
+  useDeletePostsMutation,
   useGetPostByIdQuery,
 } = jsonApi;

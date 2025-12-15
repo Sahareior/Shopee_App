@@ -100,7 +100,7 @@ const loadStoryMedia = async (storyId) => {
       return null;
     }
 
-    const response = await fetch(`https://ski-macro-carmen-actually.trycloudflare.com/story/media/${storyId}`, {
+    const response = await fetch(`https://revisions-processors-expertise-tribe.trycloudflare.com/story/media/${storyId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
