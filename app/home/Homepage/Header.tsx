@@ -26,9 +26,7 @@ const Header = ({ user, notificationCount = 3, messageCount = 2 }) => {
     }
   };
 
-  const handleCreatePost = () => {
-    router.push('/home/create-post');
-  };
+
 
   return (
     <View style={styles.container}>
@@ -128,17 +126,12 @@ const Header = ({ user, notificationCount = 3, messageCount = 2 }) => {
         {/* Right Section - Icons */}
         <View style={styles.rightSection}>
           {/* Create Post Button */}
-          <TouchableOpacity 
-            style={styles.iconButton}
-            onPress={handleCreatePost}
-          >
-            <Feather name="plus-square" size={24} color="#333" />
-          </TouchableOpacity>
+
 
           {/* Notifications */}
           <TouchableOpacity 
             style={styles.iconButton}
-            onPress={() => router.push('/home/notifications')}
+            onPress={() => router.push('/socialmedia/_components/notification')}
           >
             <Ionicons name="notifications-outline" size={24} color="#333" />
             {notificationCount > 0 && (
@@ -153,7 +146,7 @@ const Header = ({ user, notificationCount = 3, messageCount = 2 }) => {
           {/* Messages */}
           <TouchableOpacity 
             style={styles.iconButton}
-            onPress={() => router.push('/home/messages')}
+            onPress={() => router.push('/socialmedia/_components/chat')}
           >
             <Ionicons name="chatbubble-ellipses-outline" size={24} color="#333" />
             {messageCount > 0 && (
@@ -249,7 +242,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
     paddingTop: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
     shadowColor: '#000',
@@ -276,14 +269,14 @@ const styles = StyleSheet.create({
     color: '#004CFF',
   },
   searchBar: {
-    flex: 2,
+    width: '60%',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
     borderRadius: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 7,
     paddingVertical: 10,
-    marginHorizontal: 12,
+    marginHorizontal: 1,
   },
   searchPlaceholder: {
     marginLeft: 8,
@@ -339,6 +332,7 @@ const styles = StyleSheet.create({
   welcomeSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal:8,
     alignItems: 'center',
     marginBottom: 16,
   },

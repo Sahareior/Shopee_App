@@ -1,11 +1,14 @@
-import { useGetNewsFeedQuery } from '@/app/redux/slices/jsonApiSlice'
+import { useGetNewsFeedQuery, useLazyReactPostQuery } from '@/app/redux/slices/jsonApiSlice'
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import {
     Alert,
+    Animated,
     Dimensions,
     FlatList,
     Image,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
     ScrollView,
     StyleSheet,
     Text,
@@ -15,7 +18,9 @@ import {
 } from 'react-native'
 import ImageModal from './ImageModal'
 
-const { width } = Dimensions.get('window')
+const { width, height } = Dimensions.get('window')
+const REFRESH_THRESHOLD = 100; // How far to pull down to trigger refresh
+const REFRESH_HEIGHT = 60; // Height of the refresh indicator
 
 const formatDate = (iso) => {
   try {
@@ -105,14 +110,92 @@ const ReactionPicker = ({ visible, position, onSelect, onClose }) => {
   )
 }
 
+// Refresh Header Component
+const RefreshHeader = ({ pullAnim, isRefreshing, refreshTriggered, opacity }) => {
+  const rotate = pullAnim.interpolate({
+    inputRange: [0, REFRESH_THRESHOLD],
+    outputRange: ['0deg', '360deg'],
+    extrapolate: 'clamp',
+  });
+
+  const scale = pullAnim.interpolate({
+    inputRange: [0, REFRESH_THRESHOLD],
+    outputRange: [0.5, 1],
+    extrapolate: 'clamp',
+  });
+
+  return (
+    <Animated.View 
+      style={[
+        styles.refreshHeader,
+        { 
+          height: Animated.add(pullAnim, new Animated.Value(0)),
+          opacity: opacity,
+        }
+      ]}
+    >
+      <View style={styles.refreshContent}>
+        {isRefreshing ? (
+          <View style={styles.loadingContainer}>
+            <Animated.View 
+              style={[
+                styles.loadingCircle,
+                { 
+                  transform: [{ rotate }],
+                }
+              ]}
+            >
+              <View style={styles.loadingSpinner} />
+            </Animated.View>
+            <Text style={styles.refreshText}>Refreshing...</Text>
+          </View>
+        ) : (
+          <View style={styles.pullContainer}>
+            <Animated.View 
+              style={[
+                styles.arrowContainer,
+                { 
+                  transform: [{ scale }],
+                }
+              ]}
+            >
+              <View style={[
+                styles.arrow,
+                { transform: [{ rotate: refreshTriggered ? '180deg' : '0deg' }] }
+              ]} />
+            </Animated.View>
+            <Text style={styles.refreshText}>
+              {refreshTriggered ? 'Release to refresh' : 'Pull to refresh'}
+            </Text>
+          </View>
+        )}
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function NewsFeed() {
   const [commentInputs, setCommentInputs] = useState({})
   const [showReactionPicker, setShowReactionPicker] = useState(null)
   const [reactionPickerPosition, setReactionPickerPosition] = useState({ x: 0, y: 0 })
   const [showModal, setShowModal] = useState(false)
   const [imageData,setImageData] = useState(null)
-  const { data: demoData } = useGetNewsFeedQuery()
+  const { data: demoData, refetch: postRefetch } = useGetNewsFeedQuery()
+  const [trigger, {data,isLoading}] = useLazyReactPostQuery()
   const [posts, setPosts] = useState([])
+  
+  // Pull-to-refresh state
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [pullDistance, setPullDistance] = useState(0)
+  const [refreshTriggered, setRefreshTriggered] = useState(false)
+  const pullAnim = useRef(new Animated.Value(0)).current
+  const scrollOffset = useRef(0)
+  const isDragging = useRef(false)
+  const opacity = pullAnim.interpolate({
+    inputRange: [0, 50, REFRESH_THRESHOLD],
+    outputRange: [0, 0.5, 1],
+    extrapolate: 'clamp',
+  });
 
   useEffect(() => {
     if (demoData?.data?.posts) {
@@ -134,7 +217,85 @@ export default function NewsFeed() {
     }
   }, [demoData]);
 
-  const handleLike = (postId) => {
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    setRefreshTriggered(true);
+    
+    try {
+      // Call your existing refetch function
+      await postRefetch();
+      
+      // Simulate network delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.error('Refresh failed:', error);
+      Alert.alert('Refresh Error', 'Failed to refresh feed. Please try again.');
+    } finally {
+      setIsRefreshing(false);
+      setRefreshTriggered(false);
+      // Animate the pull distance back to 0
+      Animated.spring(pullAnim, {
+        toValue: 0,
+        useNativeDriver: false,
+        tension: 100,
+        friction: 10,
+      }).start();
+    }
+  };
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const yOffset = event.nativeEvent.contentOffset.y;
+    scrollOffset.current = yOffset;
+    
+    // Only track pull distance when at the top
+    if (yOffset <= 0 && isDragging.current) {
+      const pullDownDistance = Math.abs(yOffset);
+      setPullDistance(pullDownDistance);
+      
+      // Apply rubber band effect for iOS-like feel
+      const rubberBandDistance = pullDownDistance > REFRESH_THRESHOLD 
+        ? REFRESH_THRESHOLD + (pullDownDistance - REFRESH_THRESHOLD) * 0.3
+        : pullDownDistance;
+      
+      // Animate the pull distance
+      pullAnim.setValue(Math.min(rubberBandDistance, REFRESH_THRESHOLD * 1.5));
+      
+      // Trigger refresh when threshold is reached
+      if (pullDownDistance >= REFRESH_THRESHOLD && !refreshTriggered) {
+        setRefreshTriggered(true);
+      }
+    }
+  };
+
+  const handleScrollBeginDrag = () => {
+    isDragging.current = true;
+  };
+
+  const handleScrollEndDrag = () => {
+    isDragging.current = false;
+    
+    // Check if we should trigger refresh
+    if (pullDistance >= REFRESH_THRESHOLD && !isRefreshing) {
+      handleRefresh();
+    } else {
+      // Animate back if not enough pull
+      Animated.spring(pullAnim, {
+        toValue: 0,
+        useNativeDriver: false,
+        tension: 100,
+        friction: 10,
+      }).start();
+      setPullDistance(0);
+      setRefreshTriggered(false);
+    }
+  };
+
+  const handleLike = async (postId) => {
+    console.log(postId,'postId')
+    const res = await trigger(postId)
+   
     setPosts(posts.map(post => {
       if (post._id === postId) {
         const alreadyLiked = post.userLiked
@@ -271,13 +432,48 @@ export default function NewsFeed() {
     )
   }
 
-  const renderMedia = (media) => {
-    if (!media || media.length === 0) return null
-    
-    if (media.length === 1) {
-      return (
+const renderMedia = (media) => {
+  if (!media || media.length === 0) return null
+  
+  if (media.length === 1) {
+    return (
+      <TouchableOpacity 
+        style={styles.singleMediaContainer}
+        activeOpacity={0.9}
+        onPress={() => {
+          setShowModal(true)
+          setImageData(media)
+        }}
+      >
+        <Image 
+          source={{ uri: media[0].base64 || media[0].uri }} 
+          style={[
+            styles.mediaImage,
+            { 
+              aspectRatio: media[0].width && media[0].height 
+                ? media[0].width / media[0].height 
+                : 1 
+            }
+          ]} 
+          resizeMode="cover" 
+        />
+        {media[0].caption && (
+          <Text style={styles.mediaCaption}>{media[0].caption}</Text>
+        )}
+      </TouchableOpacity>
+    )
+  }
+  
+  // Replace ScrollView with FlatList
+  return (
+    <FlatList
+      data={media}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyExtractor={(item, index) => item._id || index.toString()}
+      renderItem={({ item, index }) => (
         <TouchableOpacity 
-          style={styles.singleMediaContainer}
+          style={styles.mediaItem}
           activeOpacity={0.9}
           onPress={() => {
             setShowModal(true)
@@ -285,53 +481,19 @@ export default function NewsFeed() {
           }}
         >
           <Image 
-            source={{ uri: media[0].base64 || media[0].uri }} 
-            style={[
-              styles.mediaImage,
-              { 
-                aspectRatio: media[0].width && media[0].height 
-                  ? media[0].width / media[0].height 
-                  : 1 
-              }
-            ]} 
-            resizeMode="cover" 
+            source={{ uri: item.base64 || item.uri }} 
+            style={styles.mediaThumbnail}
+            resizeMode="cover"
           />
-          {media[0].caption && (
-            <Text style={styles.mediaCaption}>{media[0].caption}</Text>
+          {index < media.length - 1 && (
+            <Text style={styles.mediaCountOverlay}>+{media.length - index - 1}</Text>
           )}
         </TouchableOpacity>
-      )
-    }
-    
-    return (
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.multipleMediaContainer}
-      >
-        {media.map((item, index) => (
-          <TouchableOpacity 
-            key={item._id || index}
-            style={styles.mediaItem}
-            activeOpacity={0.9}
-            onPress={() => {
-                setShowModal(true)
-                setImageData(media)
-            }}
-          >
-            <Image 
-              source={{ uri: item.base64 || item.uri }} 
-              style={styles.mediaThumbnail}
-              resizeMode="cover"
-            />
-            {index < media.length - 1 && (
-              <Text style={styles.mediaCountOverlay}>+{media.length - index - 1}</Text>
-            )}
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    )
-  }
+      )}
+      style={styles.multipleMediaContainer}
+    />
+  )
+}
 
   const renderPoll = (poll) => {
     if (!poll || !poll.options || poll.options.length === 0) return null
@@ -587,6 +749,14 @@ export default function NewsFeed() {
         onClose={() => setShowReactionPicker(null)}
       />
       
+      {/* Custom Refresh Header */}
+      <RefreshHeader 
+        pullAnim={pullAnim} 
+        isRefreshing={isRefreshing} 
+        refreshTriggered={refreshTriggered}
+        opacity={opacity}
+      />
+      
       <FlatList
         data={posts}
         keyExtractor={(item) => item._id}
@@ -600,8 +770,14 @@ export default function NewsFeed() {
           </View>
         )}
         showsVerticalScrollIndicator={false}
-        refreshing={false}
-        onRefresh={() => console.log('refreshing...')}
+        onScroll={handleScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={16}
+        bounces={true}
+        bouncesZoom={false}
+        alwaysBounceVertical={true}
+        overScrollMode="always"
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
             <Ionicons name="newspaper-outline" size={60} color="#ccc" />
@@ -611,11 +787,10 @@ export default function NewsFeed() {
         )}
       />
       <ImageModal
-  visible={showModal}
-  media={imageData}
-//   base64Image={imageFromBackend}
-  onClose={() => setShowModal(false)}
-/>
+        visible={showModal}
+        media={imageData}
+        onClose={() => setShowModal(false)}
+      />
     </View>
   )
 }
@@ -625,30 +800,115 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: '#f5f5f5' 
   },
+  
+  // Refresh Header Styles
+  refreshHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    overflow: 'hidden',
+  },
+  
+  refreshContent: {
+    height: REFRESH_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  pullContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  arrowContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#004CFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  
+  arrow: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderBottomWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#FFF',
+  },
+  
+  loadingCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#004CFF',
+    borderTopColor: 'transparent',
+    marginRight: 12,
+  },
+  
+  loadingSpinner: {
+    flex: 1,
+  },
+  
+  refreshText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  
+  // Updated list styles
   listContent: {
+    paddingTop: REFRESH_HEIGHT,
     paddingBottom: 40,
   },
+  
   listHeader: {
     padding: 16,
+    paddingTop: 0,
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  
   listHeaderTitle: {
     fontSize: 28,
     fontWeight: '800',
     color: '#333',
     marginBottom: 4,
   },
+  
   listHeaderSubtitle: {
     fontSize: 14,
     color: '#666',
   },
+  
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
   },
+  
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
@@ -656,43 +916,52 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
+  
   emptyStateSubtext: {
     fontSize: 14,
     color: '#999',
   },
+  
   separator: {
     height: 8,
     backgroundColor: '#f5f5f5',
   },
+  
   card: {
     backgroundColor: '#fff',
     padding: 16,
   },
+  
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
+  
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
     marginRight: 12,
   },
+  
   headerInfo: {
     flex: 1,
   },
+  
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
   },
+  
   authorName: {
     fontWeight: '700',
     fontSize: 15,
     color: '#333',
     marginRight: 6,
   },
+  
   sellerBadge: {
     backgroundColor: '#004CFF',
     paddingHorizontal: 6,
@@ -701,27 +970,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
   },
+  
   username: {
     fontSize: 13,
     color: '#666',
   },
+  
   dot: {
     fontSize: 13,
     color: '#666',
     marginHorizontal: 4,
   },
+  
   postTime: {
     fontSize: 13,
     color: '#666',
   },
+  
   moreButton: {
     padding: 4,
   },
+  
   audienceBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -732,11 +1007,13 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 12,
   },
+  
   audienceText: {
     fontSize: 12,
     color: '#666',
     marginLeft: 4,
   },
+  
   feelingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -749,40 +1026,48 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FFE4B5',
   },
+  
   feelingEmoji: {
     fontSize: 16,
     marginRight: 6,
   },
+  
   feelingText: {
     fontSize: 12,
     color: '#B8860B',
     fontWeight: '500',
   },
+  
   content: {
     fontSize: 15,
     lineHeight: 22,
     color: '#333',
     marginBottom: 12,
   },
+  
   singleMediaContainer: {
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#f0f0f0',
     marginBottom: 12,
   },
+  
   mediaImage: {
     width: '100%',
     maxHeight: 400,
   },
+  
   mediaCaption: {
     padding: 8,
     fontSize: 14,
     color: '#666',
     backgroundColor: 'rgba(0,0,0,0.05)',
   },
+  
   multipleMediaContainer: {
     marginBottom: 12,
   },
+  
   mediaItem: {
     width: 120,
     height: 120,
@@ -791,10 +1076,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+  
   mediaThumbnail: {
     width: '100%',
     height: '100%',
   },
+  
   mediaCountOverlay: {
     position: 'absolute',
     top: 0,
@@ -808,50 +1095,60 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 120,
   },
+  
   pollContainer: {
     backgroundColor: '#F8F9FA',
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
   },
+  
   pollQuestion: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
     marginBottom: 12,
   },
+  
   pollOption: {
     marginBottom: 8,
   },
+  
   pollOptionContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
   },
+  
   pollOptionText: {
     fontSize: 14,
     color: '#333',
   },
+  
   pollOptionVotes: {
     fontSize: 12,
     color: '#666',
   },
+  
   pollBar: {
     height: 6,
     backgroundColor: '#E9ECEF',
     borderRadius: 3,
     overflow: 'hidden',
   },
+  
   pollFill: {
     height: '100%',
     backgroundColor: '#004CFF',
     borderRadius: 3,
   },
+  
   pollTotalVotes: {
     fontSize: 12,
     color: '#666',
     marginTop: 8,
   },
+  
   eventContainer: {
     backgroundColor: '#F0F8FF',
     padding: 16,
@@ -860,11 +1157,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E8F0FE',
   },
+  
   eventHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
+  
   eventTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -872,35 +1171,42 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
   },
+  
   eventDetails: {
     marginBottom: 12,
   },
+  
   eventDetail: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 6,
   },
+  
   eventDetailText: {
     fontSize: 14,
     color: '#666',
     marginLeft: 8,
   },
+  
   registerButton: {
     backgroundColor: '#004CFF',
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
+  
   registerButtonText: {
     color: '#FFF',
     fontSize: 14,
     fontWeight: '600',
   },
+  
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginBottom: 12,
   },
+  
   tag: {
     backgroundColor: '#E8F0FE',
     paddingHorizontal: 12,
@@ -909,21 +1215,25 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
+  
   tagText: {
     fontSize: 13,
     color: '#004CFF',
     fontWeight: '500',
   },
+  
   taggedContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
+  
   taggedText: {
     fontSize: 13,
     color: '#666',
     marginLeft: 6,
   },
+  
   reactionSummary: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -934,10 +1244,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
     marginBottom: 8,
   },
+  
   reactionIcons: {
     flexDirection: 'row',
     marginRight: 8,
   },
+  
   reactionIcon: {
     width: 20,
     height: 20,
@@ -949,27 +1261,33 @@ const styles = StyleSheet.create({
     borderColor: '#FFF',
     marginLeft: -4,
   },
+  
   reactionIconText: {
     fontSize: 12,
   },
+  
   reactionCountText: {
     fontSize: 13,
     color: '#666',
   },
+  
   commentCountText: {
     fontSize: 13,
     color: '#666',
   },
+  
   shareCountText: {
     fontSize: 13,
     color: '#666',
   },
+  
   actionButtons: {
     flexDirection: 'row',
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -977,26 +1295,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 8,
   },
+  
   actionText: {
     fontSize: 14,
     color: '#666',
     marginLeft: 6,
   },
+  
   actionTextActive: {
     color: '#FF3B30',
     fontWeight: '600',
   },
+  
   commentInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: 12,
   },
+  
   commentAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
     marginRight: 8,
   },
+  
   commentInput: {
     flex: 1,
     backgroundColor: '#F5F5F5',
@@ -1006,10 +1329,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
+  
   commentButton: {
     padding: 8,
     marginLeft: 8,
   },
+  
   reactionPicker: {
     position: 'absolute',
     backgroundColor: '#FFF',
@@ -1021,18 +1346,22 @@ const styles = StyleSheet.create({
     elevation: 8,
     zIndex: 1000,
   },
+  
   reactionPickerContent: {
     flexDirection: 'row',
     padding: 8,
   },
+  
   reactionOption: {
     alignItems: 'center',
     paddingHorizontal: 8,
   },
+  
   reactionEmoji: {
     fontSize: 28,
     marginBottom: 4,
   },
+  
   reactionLabel: {
     fontSize: 10,
     color: '#666',

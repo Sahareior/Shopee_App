@@ -396,7 +396,7 @@ const loadRecentMedia = async () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#fff', height:'100%'},
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -405,6 +405,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#000' },
   shareButton: {

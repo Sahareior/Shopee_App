@@ -20,8 +20,7 @@ const Cart = () => {
 
   const router = useRouter()
 
-  console.log('wishData', wishlistApiData)
-  console.log('recent,view', recentView)
+
 
   // Transform API data when it loads
   useEffect(() => {
@@ -112,7 +111,7 @@ const Cart = () => {
     return cartItems.reduce((total, item) => total + item.quantity, 0)
   }
 
-  console.log('wishlistApiData:', wishlistApiData?.data)
+
 
   const renderCartItem = ({ item }) => (
     <View style={styles.cartItem}>
@@ -359,6 +358,7 @@ const styles = StyleSheet.create({
   section: {
     padding: 1,
     paddingVertical:10,
+    paddingHorizontal:7,
     paddingBottom:20,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',

@@ -1,11 +1,11 @@
 {
   "expo": {
-"androidStatusBar": {
-    "backgroundColor": "#ffffff",
-    "barStyle": "dark-content",
-    "translucent": true,
-    "hidden": false
-},
+    "androidStatusBar": {
+      "backgroundColor": "#ffffff",
+      "barStyle": "dark-content",
+      "translucent": true,
+      "hidden": false
+    },
     "androidNavigationBar": {
       "backgroundColor": "#ffffff",
       "barStyle": "dark-content"
@@ -19,7 +19,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sahareior.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -54,6 +58,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ca0b8118-7ac6-426f-ad15-d29c8d8bfd80"
+      }
     }
   }
 }

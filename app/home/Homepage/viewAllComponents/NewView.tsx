@@ -92,7 +92,7 @@ const NewView = ({ data, sub, head, dataType = 'default' }) => {
     
     // Transform the data
     const transformedData = transformData(data);
-    console.log('Transformed data:', transformedData);
+
     
     // If no data, render empty state
     if (!transformedData || transformedData.length === 0) {
