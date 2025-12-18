@@ -21,7 +21,7 @@ const {data:forYou} = useGetProductsByTypesQuery('just_for_you')
 
   return (
     <>
-      {/* 👇 Keep StatusBar outside SafeAreaView */}
+
      
 
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
@@ -29,7 +29,7 @@ const {data:forYou} = useGetProductsByTypesQuery('just_for_you')
           <ProfileHeader />
           <Categories />
           <RecentlyViewed data={productByType} from="home" />
-          {/* <Stories /> */}
+   
           <CommonScroller data={newItems} title={'New Items'} />
           <FlashSale />
           <JustForYou data={forYou} />
