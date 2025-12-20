@@ -3,19 +3,21 @@ import {
   View,
   Text,
   StyleSheet,
- 
   FlatList,
   TextInput,
   TouchableOpacity,
   Image,
   KeyboardAvoidingView,
-  Platform,
+  Platform, // Add Platform to imports
   Animated,
   StatusBar,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Ionicons, Feather, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCreateConversationMutation, useGetAllMessagesQuery, useSendMessagesMutation } from '@/app/redux/slices/jsonApiSlice';
+import ChatBody from './chatBody';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,7 +26,7 @@ const MOCK_CONVERSATIONS = [
   {
     id: '1',
     user: {
-      id: 'u1',
+      id: '692d29bbcfb5b4647587cb3b',
       name: 'Alex Morgan',
       username: '@alexmorgan',
       avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786',
@@ -39,7 +41,7 @@ const MOCK_CONVERSATIONS = [
   {
     id: '2',
     user: {
-      id: 'u2',
+      id: '693a526897f9848386b9e3c6',
       name: 'Sarah Chen',
       username: '@sarahdesign',
       avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80',
@@ -50,51 +52,6 @@ const MOCK_CONVERSATIONS = [
     timestamp: '30 min ago',
     unreadCount: 0,
     isTyping: true,
-  },
-  {
-    id: '3',
-    user: {
-      id: 'u3',
-      name: 'Marcus Lee',
-      username: '@marcus_tech',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d',
-      isOnline: false,
-      isVerified: true,
-    },
-    lastMessage: 'Thanks for the help yesterday! 🙏',
-    timestamp: '2h ago',
-    unreadCount: 0,
-    isTyping: false,
-  },
-  {
-    id: '4',
-    user: {
-      id: 'u4',
-      name: 'Emma Watson',
-      username: '@emmaw',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2',
-      isOnline: true,
-      isVerified: true,
-    },
-    lastMessage: '📸 Check out my new photos!',
-    timestamp: '4h ago',
-    unreadCount: 5,
-    isTyping: false,
-  },
-  {
-    id: '5',
-    user: {
-      id: 'u5',
-      name: 'David Park',
-      username: '@davidpark',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
-      isOnline: false,
-      isVerified: false,
-    },
-    lastMessage: 'Meeting rescheduled to 3 PM',
-    timestamp: '1d ago',
-    unreadCount: 0,
-    isTyping: false,
   },
 ];
 
@@ -149,6 +106,9 @@ const Chat = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState(MOCK_MESSAGES);
   const [conversations, setConversations] = useState(MOCK_CONVERSATIONS);
+  const [createConversation] = useCreateConversationMutation();
+  const [sendMessages] = useSendMessagesMutation()
+  const {data:chatData} = useGetAllMessagesQuery('69463bbade9c7c5d30c328fe')
   
   const flatListRef = useRef(null);
   const inputRef = useRef(null);
@@ -179,16 +139,88 @@ const Chat = () => {
     }
   }, [messages]);
 
-  const handleSendMessage = () => {
+  console.log(chatData,'asdddd')
+
+  const createChat = async (item) => {
+    try {
+      console.log('=== CREATE CHAT PROCESS START ===');
+      console.log('Selected User Data:', JSON.stringify(item.user, null, 2));
+      console.log('User ID to send:', item.user.id);
+      
+      // Prepare payload based on your Message model
+      const payload = {
+        receiver: item.user.id,
+        content: "Initial message from chat creation",
+        messageType: "text"
+      };
+      
+      console.log('Payload to send to backend:', JSON.stringify(payload, null, 2));
+      
+      // Call the mutation
+      console.log('Calling createConversation mutation...');
+      const response = await createConversation(payload).unwrap();
+      
+      console.log('=== CREATE CHAT RESPONSE ===');
+      console.log('Full response:', JSON.stringify(response, null, 2));
+      console.log('Response data:', response.data);
+      console.log('Response status:', response.status);
+      console.log('Chat Room ID (if any):', response.data?._id || response.data?.id);
+      
+      // If successful, set the selected chat
+      if (response) {
+        console.log('Setting selected chat to:', item.user.name);
+        setSelectedChat(item);
+        
+        // Log the structure for future messages
+        console.log('For sending messages, you would need:');
+        console.log('- chatRoom ID:', response.data?._id || response.data?.id);
+        console.log('- sender ID: [current user ID from your auth]');
+        console.log('- receiver ID:', item.user.id);
+        console.log('- content: [message text]');
+        console.log('- messageType: "text" (or other types)');
+      }
+    } catch (error) {
+      console.error('=== CREATE CHAT ERROR ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error data:', error.data);
+      console.error('Error status:', error.status);
+      
+      Alert.alert('Error', 'Failed to create chat. Please try again.');
+    }
+  };
+
+  const handleSendMessage = async () => {
     if (message.trim()) {
+      console.log('=== SENDING MESSAGE ===');
+      console.log('Message content:', message);
+      console.log('Selected chat user:', selectedChat?.user?.name);
+      console.log('Receiver ID:', selectedChat?.user?.id);
+      
+      // Prepare message object based on your Message model
       const newMessage = {
         id: Date.now().toString(),
-        text: message,
+        text: message, // Frontend uses "text", backend uses "content"
         senderId: 'currentUser',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isRead: false,
         reactions: {},
+        
+        // These would be needed for your backend Message model:
+        // content: message, // Backend field name
+        // receiver: selectedChat?.user?.id,
+        // messageType: 'text',
+        // chatRoom: [chatRoomId from createConversation response]
       };
+      
+      console.log('Message object (frontend):', JSON.stringify(newMessage, null, 2));
+      const payload = {
+        chatRoom: '69463bbade9c7c5d30c328fe', 
+        receiver: selectedChat?.user?.id,
+        content: message,
+        messageType: 'text'
+      }
+      const res = await sendMessages(payload).unwrap()
       setMessages([...messages, newMessage]);
       setMessage('');
       
@@ -212,78 +244,29 @@ const Chat = () => {
           isTyping: false,
           reactions: {},
         };
+        
+        console.log('=== RECEIVED REPLY ===');
+        console.log('Reply message:', replyMessage.text);
+        console.log('From user ID:', selectedChat?.user?.id);
+        
         setMessages(prev => [...prev, replyMessage]);
       }, 1000);
     }
   };
 
-  const renderMessageItem = ({ item }) => {
-    const isCurrentUser = item.senderId === 'currentUser';
-    
-    const messageStyles = isCurrentUser ? {
-      container: [styles.messageBubble, styles.currentUserBubble],
-      content: [styles.messageContent, styles.currentUserContent],
-      text: styles.currentUserMessageText,
-      time: styles.currentUserMessageTime,
-      reactionBadge: styles.currentUserReactionBadge,
-      reactionCount: styles.currentUserReactionCount,
-    } : {
-      container: [styles.messageBubble, styles.otherUserBubble],
-      content: [styles.messageContent, styles.otherUserContent],
-      text: styles.otherUserMessageText,
-      time: styles.otherUserMessageTime,
-      reactionBadge: styles.otherUserReactionBadge,
-      reactionCount: styles.otherUserReactionCount,
-    };
-    
-    return (
-      <Animated.View
-        style={[
-          messageStyles.container,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
-      >
-        <View style={messageStyles.content}>
-          <Text style={messageStyles.text}>{item.text}</Text>
-          
-          {/* Message reactions */}
-          {Object.keys(item.reactions).length > 0 && (
-            <View style={styles.reactionsContainer}>
-              {Object.entries(item.reactions).map(([type, count]) => (
-                <View key={type} style={messageStyles.reactionBadge}>
-                  <Text style={styles.reactionEmoji}>
-                    {type === 'like' ? '👍' : type === 'love' ? '❤️' : '😊'}
-                  </Text>
-                  {count > 1 && (
-                    <Text style={messageStyles.reactionCount}>{count}</Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          )}
-          
-          <View style={styles.messageFooter}>
-            <Text style={messageStyles.time}>{item.timestamp}</Text>
-            {isCurrentUser && (
-              <Ionicons 
-                name={item.isRead ? "checkmark-done" : "checkmark"} 
-                size={14} 
-                color={item.isRead ? "#007AFF" : "#999"} 
-              />
-            )}
-          </View>
-        </View>
-      </Animated.View>
-    );
-  };
+
 
   const renderConversationItem = ({ item }) => (
     <TouchableOpacity
       style={styles.conversationItem}
-      onPress={() => setSelectedChat(item)}
+      onPress={() => {
+        console.log('=== CONVERSATION ITEM CLICKED ===');
+        console.log('Item clicked:', item.user.name);
+        console.log('User ID:', item.user.id);
+        
+        setSelectedChat(item);
+        createChat(item);
+      }}
       activeOpacity={0.7}
     >
       <View style={styles.avatarContainer}>
@@ -330,7 +313,10 @@ const Chat = () => {
     <View style={styles.chatHeader}>
       <TouchableOpacity 
         style={styles.backButton}
-        onPress={() => setSelectedChat(null)}
+        onPress={() => {
+          console.log('=== BACK TO CONVERSATIONS ===');
+          setSelectedChat(null);
+        }}
       >
         <Ionicons name="arrow-back" size={24} color="#000" />
       </TouchableOpacity>
@@ -371,10 +357,7 @@ const Chat = () => {
     >
       <View style={styles.headerTop}>
         <Text style={styles.headerTitle}>Messages</Text>
-       
       </View>
-      
-
       
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
@@ -383,7 +366,10 @@ const Chat = () => {
           placeholder="Search messages..."
           placeholderTextColor="#999"
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={(text) => {
+            setSearchQuery(text);
+            console.log('Search query:', text);
+          }}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -402,53 +388,17 @@ const Chat = () => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <SafeAreaView style={styles.safeArea}>
           {renderChatHeader()}
-          
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessageItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.messagesList}
-            showsVerticalScrollIndicator={false}
-          />
-          
-          <View style={styles.inputContainer}>
-            <TouchableOpacity style={styles.attachmentButton}>
-              <Ionicons name="add-circle" size={28} color="#007AFF" />
-            </TouchableOpacity>
-            
-            <TextInput
-              ref={inputRef}
-              style={styles.messageInput}
-              placeholder="Message..."
-              placeholderTextColor="#999"
-              value={message}
-              onChangeText={setMessage}
-              multiline
-            />
-            
-            {message.trim() ? (
-              <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
-                <Ionicons name="send" size={24} color="#fff" />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={styles.voiceButton}>
-                <FontAwesome5 name="microphone" size={20} color="#007AFF" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </SafeAreaView>
+          <ChatBody />
       </KeyboardAvoidingView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      
-      
       {renderMainHeader()}
+
+      
       
       <FlatList
         data={conversations}
@@ -471,6 +421,7 @@ const Chat = () => {
   );
 };
 
+// Styles remain EXACTLY the same as your original code
 const styles = StyleSheet.create({
   container: {
     flex: 1,

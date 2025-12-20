@@ -5,7 +5,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 // Create a custom base query with proper async token handling
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: 'https://revisions-processors-expertise-tribe.trycloudflare.com',
+  baseUrl: 'http://localhost:8000',
   prepareHeaders: async (headers, { getState }) => {
     let token = null;
     
@@ -78,7 +78,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   // Handle network errors
   if (result.error && result.error.status === 'FETCH_ERROR') {
     console.error('🌐 Network error - check backend URL and connection');
-    console.log('Current baseUrl:', 'https://revisions-processors-expertise-tribe.trycloudflare.com');
+    console.log('Current baseUrl:', 'http://localhost:8000');
   }
   
   return result;
@@ -306,6 +306,26 @@ export const jsonApi = createApi({
     getRecentViewed: builder.query({
       query: () => `/recent-view`,
     }),
+
+    createConversation: builder.mutation({
+      query: (data) => ({
+        url: '/chatroom/create',
+        method: 'POST',
+        body: data
+      })
+    }),
+
+    sendMessages: builder.mutation({
+      query: (data) => ({
+        url: '/chatroom/send-messages',
+        method: 'POST',
+        body: data
+      })
+    }),
+
+    getAllMessages: builder.query({
+      query: (id) => `/chatroom/all-messages/${id}`
+  }),
     
     // Post endpoint (if needed)
     getPostById: builder.query({
@@ -378,5 +398,8 @@ export const {
   useLazyReactPostQuery,
   usePostSocialPostMutation,
   useDeletePostsMutation,
+  useCreateConversationMutation,
+  useSendMessagesMutation,
+  useGetAllMessagesQuery,
   useGetPostByIdQuery,
 } = jsonApi;
